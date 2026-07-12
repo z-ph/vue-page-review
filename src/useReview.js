@@ -1,4 +1,5 @@
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
+import JSZip from 'jszip'
 
 export function usePageReview(options = {}) {
   const {
@@ -31,7 +32,7 @@ export function usePageReview(options = {}) {
 
   const reviews = ref(loadFromStorage())
 
-  const allReviews = computed(() => reviews.value)
+  const allReviews = () => reviews.value
 
   function getPageReviews(pagePath) {
     const path = pagePath || defaultPagePath()
@@ -73,57 +74,59 @@ export function usePageReview(options = {}) {
     saveToStorage(reviews.value)
   }
 
-  function exportToJSON() {
-    const data = {
+  function buildReportData() {
+    return {
       exportTime: new Date().toISOString(),
       total: reviews.value.length,
       reviews: reviews.value
     }
+  }
+
+  function exportToJSON() {
     downloadBlob(
-      new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
+      new Blob([JSON.stringify(buildReportData(), null, 2)], { type: 'application/json' }),
       `page-reviews-${formatDate()}.json`
     )
   }
 
   function exportToMarkdown() {
-    const lines = [
-      '# 页面评审报告',
-      '',
-      `导出时间：${new Date().toLocaleString()}`,
-      `评审总数：${reviews.value.length}`,
-      ''
-    ]
-
-    const grouped = groupBy(reviews.value, 'pagePath')
-    Object.entries(grouped).forEach(([path, list]) => {
-      lines.push(`## 页面：${path}`)
-      lines.push('')
-      list.forEach((item, idx) => {
-        lines.push(`### ${idx + 1}. ${item.title || '未命名评审'}`)
-        lines.push(`- **类型**：${item.type === 'element' ? '元素评审' : '视图范围评审'}`)
-        lines.push(`- **严重等级**：${severityText(item.severity)}`)
-        lines.push(`- **状态**：${item.status === 'resolved' ? '已解决' : '待处理'}`)
-        lines.push(`- **窗口尺寸**：${item.viewport?.width} × ${item.viewport?.height}`)
-        if (item.scroll) {
-          lines.push(`- **滚动位置**：x=${item.scroll.x}, y=${item.scroll.y}`)
-        }
-        if (item.type === 'element' && item.elementRect) {
-          lines.push(`- **元素选择器**：\`${item.selector}\``)
-          lines.push(`- **元素位置**：x=${item.elementRect.x}, y=${item.elementRect.y}, width=${item.elementRect.width}, height=${item.elementRect.height}`)
-          if (item.elementText) lines.push(`- **元素文本**：${item.elementText}`)
-        } else if (item.viewportRect) {
-          lines.push(`- **框选范围**：x=${item.viewportRect.x}, y=${item.viewportRect.y}, width=${item.viewportRect.width}, height=${item.viewportRect.height}`)
-        }
-        lines.push(`- **评审建议**：${item.suggestion}`)
-        lines.push(`- **创建时间**：${new Date(item.createdAt).toLocaleString()}`)
-        lines.push('')
-      })
-    })
-
+    const content = buildMarkdown(buildReportData())
     downloadBlob(
-      new Blob([lines.join('\n')], { type: 'text/markdown' }),
+      new Blob([content], { type: 'text/markdown' }),
       `page-reviews-${formatDate()}.md`
     )
+  }
+
+  async function exportToZIP() {
+    const zip = new JSZip()
+    const data = buildReportData()
+
+    const reportForZip = {
+      ...data,
+      reviews: data.reviews.map(r => ({
+        ...r,
+        screenshots: r.screenshots?.map(s => {
+          if (s.url) return { type: s.type, filename: s.filename, url: s.url }
+          return { type: s.type, filename: s.filename, imagePath: `images/${s.filename}` }
+        })
+      }))
+    }
+
+    zip.file('review.json', JSON.stringify(reportForZip, null, 2))
+    zip.file('review.md', buildMarkdown(reportForZip))
+
+    const imagesFolder = zip.folder('images')
+    for (const review of data.reviews) {
+      for (const screenshot of (review.screenshots || [])) {
+        if (screenshot.data && !screenshot.url) {
+          const base64 = screenshot.data.replace(/^data:image\/png;base64,/, '')
+          imagesFolder.file(screenshot.filename, base64, { base64: true })
+        }
+      }
+    }
+
+    const blob = await zip.generateAsync({ type: 'blob' })
+    downloadBlob(blob, `page-reviews-${formatDate()}.zip`)
   }
 
   return {
@@ -136,8 +139,57 @@ export function usePageReview(options = {}) {
     clearPageReviews,
     clearAllReviews,
     exportToJSON,
-    exportToMarkdown
+    exportToMarkdown,
+    exportToZIP
   }
+}
+
+function buildMarkdown(data) {
+  const lines = [
+    '# 页面评审报告',
+    '',
+    `导出时间：${new Date().toLocaleString()}`,
+    `评审总数：${data.total}`,
+    ''
+  ]
+
+  const grouped = groupBy(data.reviews, 'pagePath')
+  Object.entries(grouped).forEach(([path, list]) => {
+    lines.push(`## 页面：${path}`)
+    lines.push('')
+    list.forEach((item, idx) => {
+      lines.push(`### ${idx + 1}. ${item.title || '未命名评审'}`)
+      lines.push(`- **类型**：${item.type === 'element' ? '元素评审' : '视图范围评审'}`)
+      lines.push(`- **严重等级**：${severityText(item.severity)}`)
+      lines.push(`- **状态**：${item.status === 'resolved' ? '已解决' : '待处理'}`)
+      lines.push(`- **窗口尺寸**：${item.viewport?.width} × ${item.viewport?.height}`)
+      if (item.scroll) {
+        lines.push(`- **滚动位置**：x=${item.scroll.x}, y=${item.scroll.y}`)
+      }
+      if (item.type === 'element' && item.elementRect) {
+        lines.push(`- **元素选择器**：\`${item.selector}\``)
+        lines.push(`- **元素位置**：x=${item.elementRect.x}, y=${item.elementRect.y}, width=${item.elementRect.width}, height=${item.elementRect.height}`)
+        if (item.elementText) lines.push(`- **元素文本**：${item.elementText}`)
+      } else if (item.viewportRect) {
+        lines.push(`- **框选范围**：x=${item.viewportRect.x}, y=${item.viewportRect.y}, width=${item.viewportRect.width}, height=${item.viewportRect.height}`)
+      }
+      lines.push(`- **评审建议**：${item.suggestion}`)
+      lines.push(`- **创建时间**：${new Date(item.createdAt).toLocaleString()}`)
+
+      if (item.screenshots && item.screenshots.length > 0) {
+        lines.push('')
+        lines.push('#### 截图')
+        item.screenshots.forEach(s => {
+          const src = s.url || (s.imagePath || `images/${s.filename}`)
+          lines.push(`![${s.type}](${src})`)
+        })
+      }
+
+      lines.push('')
+    })
+  })
+
+  return lines.join('\n')
 }
 
 function downloadBlob(blob, filename) {

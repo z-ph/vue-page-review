@@ -26,6 +26,7 @@
               <el-dropdown-menu>
                 <el-dropdown-item @click="exportToMarkdown">导出为 Markdown</el-dropdown-item>
                 <el-dropdown-item @click="exportToJSON">导出为 JSON</el-dropdown-item>
+                <el-dropdown-item v-if="enableZipExport" @click="exportToZIP">导出为 ZIP</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -42,20 +43,20 @@
         <span class="highlight-label">{{ hoveredTag }}</span>
       </div>
 
-      <!-- 已选元素确认框 -->
+      <!-- 已选元素确认框（表单打开期间也保持高亮） -->
       <div
-        v-if="selectedElement && mode === 'element' && !formVisible"
+        v-if="selectedElement && mode === 'element'"
         class="highlight-box selected-box"
         :style="highlightStyle(selectedElement.rect)"
       >
         <span class="highlight-label">已选：{{ selectedElement.tag }}</span>
       </div>
 
-      <!-- 框选矩形 -->
+      <!-- 框选矩形（表单打开期间也保持高亮） -->
       <div
-        v-if="dragRect"
+        v-if="dragRect || (form.type === 'viewport' && form.viewportRect && formVisible)"
         class="drag-rect"
-        :style="dragRectStyle"
+        :style="dragRect ? dragRectStyle : highlightStyle(form.viewportRect)"
       />
 
       <!-- 评审意见表单弹窗 -->
@@ -81,6 +82,17 @@
           </el-form-item>
           <el-form-item label="滚动位置">
             <span class="text-muted">x={{ form.scroll?.x }}, y={{ form.scroll?.y }}</span>
+          </el-form-item>
+          <el-form-item label="截图">
+            <el-checkbox-group v-model="selectedScreenshots">
+              <el-checkbox
+                v-for="opt in availableScreenshotOptions"
+                :key="opt.value"
+                :label="opt.value"
+              >
+                {{ opt.label }}
+              </el-checkbox>
+            </el-checkbox-group>
           </el-form-item>
           <el-form-item label="标题" required>
             <el-input v-model="form.title" placeholder="例如：按钮样式不统一" />
@@ -118,6 +130,7 @@
         <div class="review-list-actions">
           <el-button size="small" type="primary" @click="exportToMarkdown">导出 Markdown</el-button>
           <el-button size="small" @click="exportToJSON">导出 JSON</el-button>
+          <el-button v-if="enableZipExport" size="small" @click="exportToZIP">导出 ZIP</el-button>
           <el-button size="small" type="danger" text @click="clearPage">清空本页</el-button>
         </div>
         <el-empty v-if="pageReviews.length === 0" description="暂无评审意见" />
@@ -152,12 +165,23 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { ElMessageBox } from 'element-plus'
 import { usePageReview } from './useReview.js'
+import {
+  SCREENSHOT_TYPES,
+  generateScreenshotFilename,
+  captureElement,
+  captureViewport,
+  captureFullPage,
+  captureBox,
+  uploadScreenshot
+} from './screenshot.js'
 
 const props = defineProps({
   active: { type: Boolean, default: false },
   pagePath: { type: String, default: '' },
   pageName: { type: String, default: '' },
-  storageKey: { type: String, default: 'page-reviews' }
+  storageKey: { type: String, default: 'page-reviews' },
+  imageUpload: { type: Function, default: null },
+  enableZipExport: { type: Boolean, default: true }
 })
 
 const emit = defineEmits(['update:active', 'add', 'update', 'delete', 'clear', 'export'])
@@ -166,7 +190,7 @@ const resolvedPagePath = computed(() => {
   return props.pagePath || (typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/')
 })
 
-const { reviews, getPageReviews, addReview, updateReview, deleteReview, clearPageReviews, exportToJSON, exportToMarkdown } = usePageReview({
+const { reviews, getPageReviews, addReview, updateReview, deleteReview, clearPageReviews, exportToJSON, exportToMarkdown, exportToZIP } = usePageReview({
   storageKey: props.storageKey,
   defaultPagePath: () => resolvedPagePath.value
 })
@@ -188,6 +212,8 @@ const dragStart = ref({ x: 0, y: 0 })
 const toolbarPos = ref({ x: 0, y: 0 })
 const isDraggingToolbar = ref(false)
 const toolbarDragStart = ref({ x: 0, y: 0 })
+
+const selectedScreenshots = ref([])
 
 const form = ref({
   type: 'element',
@@ -394,6 +420,52 @@ function onKeyDown(e) {
 
 function handleOverlayClick() {}
 
+const availableScreenshotOptions = computed(() => {
+  if (form.value.type === 'element') {
+    return [
+      { value: SCREENSHOT_TYPES.ELEMENT, label: '选中元素' },
+      { value: SCREENSHOT_TYPES.VIEWPORT, label: '当前视口' },
+      { value: SCREENSHOT_TYPES.FULL_PAGE, label: '完整页面' }
+    ]
+  }
+  return [
+    { value: SCREENSHOT_TYPES.BOX, label: '框选区域' },
+    { value: SCREENSHOT_TYPES.VIEWPORT, label: '当前视口' },
+    { value: SCREENSHOT_TYPES.FULL_PAGE, label: '完整页面' }
+  ]
+})
+
+async function captureScreenshots() {
+  const screenshots = []
+  for (const type of selectedScreenshots.value) {
+    let dataUrl = null
+    if (type === SCREENSHOT_TYPES.ELEMENT && selectedElement.value?.el) {
+      dataUrl = await captureElement(selectedElement.value.el)
+    } else if (type === SCREENSHOT_TYPES.BOX && form.value.viewportRect) {
+      dataUrl = await captureBox(form.value.viewportRect)
+    } else if (type === SCREENSHOT_TYPES.VIEWPORT) {
+      dataUrl = await captureViewport()
+    } else if (type === SCREENSHOT_TYPES.FULL_PAGE) {
+      dataUrl = await captureFullPage()
+    }
+
+    if (dataUrl) {
+      const filename = generateScreenshotFilename(type)
+      let url = null
+      if (props.imageUpload) {
+        url = await uploadScreenshot(dataUrl, filename, props.imageUpload)
+      }
+      screenshots.push({
+        type,
+        filename,
+        data: url ? undefined : dataUrl,
+        url: url || undefined
+      })
+    }
+  }
+  return screenshots
+}
+
 function openForm(type, viewportRect = null) {
   const env = captureEnv()
   form.value = {
@@ -411,12 +483,14 @@ function openForm(type, viewportRect = null) {
     pageUrl: env.pageUrl,
     pageName: env.pageName
   }
+  selectedScreenshots.value = []
   formVisible.value = true
 }
 
 function resetForm() {
   selectedElement.value = null
   dragRect.value = null
+  selectedScreenshots.value = []
   form.value = {
     type: 'element',
     title: '',
@@ -434,8 +508,9 @@ function resetForm() {
   }
 }
 
-function submitReview() {
+async function submitReview() {
   if (!canSubmit.value) return
+  const screenshots = await captureScreenshots()
   const record = addReview({
     type: form.value.type,
     title: form.value.title.trim(),
@@ -450,7 +525,8 @@ function submitReview() {
     pagePath: form.value.pagePath,
     pageUrl: form.value.pageUrl,
     pageName: form.value.pageName,
-    status: 'open'
+    status: 'open',
+    screenshots
   })
   formVisible.value = false
   emit('add', record)

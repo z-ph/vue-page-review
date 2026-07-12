@@ -1,6 +1,6 @@
 {
   "name": "vue-page-review",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A Vue 3 page review tool for collecting UI feedback with element selection and viewport boxing.",
   "type": "module",
   "main": "./dist/vue-page-review.umd.cjs",
@@ -22,8 +22,8 @@
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
-    "vue": "^3.3.0",
-    "element-plus": "^2.14.0"
+    "element-plus": "^2.14.0",
+    "vue": "^3.3.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.0",
@@ -38,5 +38,9 @@
     "ui-review",
     "annotation"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "html-to-image": "^1.11.13",
+    "jszip": "^3.10.1"
+  }
 }
