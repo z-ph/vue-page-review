@@ -1,0 +1,69 @@
+[
+  {
+    "number": 1,
+    "category": "阶段 1：依赖与基础设施",
+    "task": "添加截图依赖并设计截图数据结构",
+    "steps": [
+      { "step": "安装 html-to-image", "completed": false },
+      { "step": "定义 Screenshot 类型：{ type, filename, data?: base64, url?: string }", "completed": false },
+      { "step": "扩展 ReviewRecord 类型以包含 screenshots 数组", "completed": false }
+    ],
+    "passes": false
+  },
+  {
+    "number": 2,
+    "category": "阶段 2：截图捕获",
+    "task": "实现四种截图捕获能力",
+    "steps": [
+      { "step": "实现 captureSelectedElement：对选中元素调用 html-to-image", "completed": false },
+      { "step": "实现 captureBoxedRegion：对框选区域裁剪 canvas", "completed": false },
+      { "step": "实现 captureViewport：对 document.documentElement 截图", "completed": false },
+      { "step": "实现 captureFullPage：滚动拼接完整页面（或 html-to-image 全节点截图）", "completed": false },
+      { "step": "保持选中元素高亮直到表单关闭", "completed": false }
+    ],
+    "passes": false
+  },
+  {
+    "number": 3,
+    "category": "阶段 3：UI 集成",
+    "task": "在评审表单中添加截图选项",
+    "steps": [
+      { "step": "在 ReviewTool 表单中增加截图类型复选框", "completed": false },
+      { "step": "根据评审类型（element/viewport）动态显示可用截图选项", "completed": false }
+    ],
+    "passes": false
+  },
+  {
+    "number": 4,
+    "category": "阶段 4：图床与本地存储",
+    "task": "支持 imageUpload 回调与 base64 兜底",
+    "steps": [
+      { "step": "添加 imageUpload prop，签名 async (blob, filename) => url", "completed": false },
+      { "step": "保存评审时，若有 imageUpload 则上传并只存 url，否则存 base64", "completed": false }
+    ],
+    "passes": false
+  },
+  {
+    "number": 5,
+    "category": "阶段 5：导出增强",
+    "task": "增强 JSON/Markdown 导出并新增 ZIP 导出",
+    "steps": [
+      { "step": "JSON 导出包含 screenshots 数组", "completed": false },
+      { "step": "Markdown 导出渲染图片链接", "completed": false },
+      { "step": "引入 JSZip 实现 ZIP 导出：评审文件 + images/ 文件夹", "completed": false },
+      { "step": "ZIP 导出时将 base64 转换为独立 PNG 文件", "completed": false }
+    ],
+    "passes": false
+  },
+  {
+    "number": 6,
+    "category": "阶段 6：构建与验证",
+    "task": "构建包并验证截图导出",
+    "steps": [
+      { "step": "运行 npm run build", "completed": false },
+      { "step": "编写最小示例或测试验证截图捕获", "completed": false },
+      { "step": "验证 ZIP 导出包含正确文件", "completed": false }
+    ],
+    "passes": false
+  }
+]
