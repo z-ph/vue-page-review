@@ -17,6 +17,7 @@
           </el-radio-group>
         </div>
         <div class="toolbar-right">
+          <el-button v-if="enableComponentTree" size="small" @click="treeVisible = true">组件树</el-button>
           <el-badge :value="pageReviews.length" class="review-badge">
             <el-button size="small" @click="listVisible = true">评审列表</el-button>
           </el-badge>
@@ -51,6 +52,13 @@
       >
         <span class="highlight-label">已选：{{ selectedElement.tag }}</span>
       </div>
+
+      <!-- 组件树悬停高亮 -->
+      <div
+        v-if="treeHoverRect"
+        class="highlight-box tree-hover-box"
+        :style="highlightStyle(treeHoverRect)"
+      />
 
       <!-- 框选矩形（表单打开期间也保持高亮） -->
       <div
@@ -120,6 +128,52 @@
         </template>
       </el-dialog>
 
+      <!-- 组件树抽屉 -->
+      <el-drawer
+        v-model="treeVisible"
+        title="组件树检查器"
+        size="480px"
+        :with-header="true"
+      >
+        <el-empty v-if="!componentTree" description="先选择一个元素以查看组件树" />
+        <div v-else class="tree-panel">
+          <div v-if="componentTree.framework && componentTree.framework.length" class="tree-section">
+            <h4>框架组件树</h4>
+            <div class="tree-list">
+              <div
+                v-for="(node, idx) in componentTree.framework"
+                :key="'fw-' + idx"
+                class="tree-node"
+                @mouseenter="onTreeNodeHover(node)"
+                @mouseleave="treeHoverRect = null"
+                @click="onTreeNodeSelect(node)"
+              >
+                <span class="node-name">{{ node.componentName }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="tree-section">
+            <h4>DOM 树</h4>
+            <div class="tree-list">
+              <div
+                v-for="(node, idx) in componentTree.dom"
+                :key="'dom-' + idx"
+                class="tree-node"
+                :style="{ paddingLeft: idx * 12 + 'px' }"
+                @mouseenter="onTreeNodeHover(node)"
+                @mouseleave="treeHoverRect = null"
+                @click="onTreeNodeSelect(node)"
+              >
+                <span class="node-tag">{{ node.tag }}</span>
+                <span v-if="node.id" class="node-id">#{{ node.id }}</span>
+                <span v-if="node.aria?.role" class="node-aria">role={{ node.aria.role }}</span>
+                <span v-if="node.testId" class="node-testid">testid={{ node.testId }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </el-drawer>
+
       <!-- 评审列表抽屉 -->
       <el-drawer
         v-model="listVisible"
@@ -141,6 +195,7 @@
               <div class="review-item-tags">
                 <el-tag size="small" :type="severityType(item.severity)">{{ severityText(item.severity) }}</el-tag>
                 <el-tag size="small" type="info">{{ item.type === 'element' ? '元素' : '视图' }}</el-tag>
+                <el-tag v-if="item.componentTree?.dom?.length" size="small" type="success">树</el-tag>
               </div>
             </div>
             <p class="review-item-target">
@@ -174,6 +229,7 @@ import {
   captureBox,
   uploadScreenshot
 } from './screenshot.js'
+import { getComponentTree, getNodeInfo } from './inspector.js'
 
 const props = defineProps({
   active: { type: Boolean, default: false },
@@ -181,7 +237,8 @@ const props = defineProps({
   pageName: { type: String, default: '' },
   storageKey: { type: String, default: 'page-reviews' },
   imageUpload: { type: Function, default: null },
-  enableZipExport: { type: Boolean, default: true }
+  enableZipExport: { type: Boolean, default: true },
+  enableComponentTree: { type: Boolean, default: true }
 })
 
 const emit = defineEmits(['update:active', 'add', 'update', 'delete', 'clear', 'export'])
@@ -200,10 +257,13 @@ const pageReviews = computed(() => getPageReviews(resolvedPagePath.value))
 const mode = ref('element')
 const formVisible = ref(false)
 const listVisible = ref(false)
+const treeVisible = ref(false)
 
 const hoveredRect = ref(null)
 const hoveredTag = ref('')
 const selectedElement = ref(null)
+const treeHoverRect = ref(null)
+const componentTree = ref(null)
 
 const dragRect = ref(null)
 const isDragging = ref(false)
@@ -228,7 +288,9 @@ const form = ref({
   scroll: { x: 0, y: 0 },
   pagePath: '',
   pageUrl: '',
-  pageName: ''
+  pageName: '',
+  componentTree: null,
+  aria: null
 })
 
 const canSubmit = computed(() => form.value.title.trim() && form.value.suggestion.trim())
@@ -356,6 +418,34 @@ function onElementClick(e) {
       height: rect.height
     }
   }
+  componentTree.value = getComponentTree(target)
+  openForm('element')
+}
+
+function onTreeNodeHover(node) {
+  if (!node.rect) return
+  treeHoverRect.value = node.rect
+}
+
+function onTreeNodeSelect(node) {
+  if (!node.selector) return
+  const el = document.querySelector(node.selector)
+  if (!el) return
+  const rect = el.getBoundingClientRect()
+  selectedElement.value = {
+    el,
+    selector: node.selector,
+    tag: el.tagName.toLowerCase(),
+    text: el.innerText?.slice(0, 40) || '',
+    rect: {
+      x: rect.left + window.scrollX,
+      y: rect.top + window.scrollY,
+      width: rect.width,
+      height: rect.height
+    }
+  }
+  componentTree.value = getComponentTree(el)
+  treeVisible.value = false
   openForm('element')
 }
 
@@ -468,6 +558,7 @@ async function captureScreenshots() {
 
 function openForm(type, viewportRect = null) {
   const env = captureEnv()
+  const nodeInfo = selectedElement.value?.el ? getNodeInfo(selectedElement.value.el) : null
   form.value = {
     type,
     title: '',
@@ -481,7 +572,9 @@ function openForm(type, viewportRect = null) {
     scroll: env.scroll,
     pagePath: env.pagePath,
     pageUrl: env.pageUrl,
-    pageName: env.pageName
+    pageName: env.pageName,
+    componentTree: componentTree.value,
+    aria: nodeInfo?.aria || null
   }
   selectedScreenshots.value = []
   formVisible.value = true
@@ -490,6 +583,8 @@ function openForm(type, viewportRect = null) {
 function resetForm() {
   selectedElement.value = null
   dragRect.value = null
+  treeHoverRect.value = null
+  componentTree.value = null
   selectedScreenshots.value = []
   form.value = {
     type: 'element',
@@ -504,7 +599,9 @@ function resetForm() {
     scroll: { x: 0, y: 0 },
     pagePath: '',
     pageUrl: '',
-    pageName: ''
+    pageName: '',
+    componentTree: null,
+    aria: null
   }
 }
 
@@ -526,7 +623,9 @@ async function submitReview() {
     pageUrl: form.value.pageUrl,
     pageName: form.value.pageName,
     status: 'open',
-    screenshots
+    screenshots,
+    componentTree: form.value.componentTree,
+    aria: form.value.aria
   })
   formVisible.value = false
   emit('add', record)
@@ -605,6 +704,7 @@ nextTick(() => {
       resetForm()
       hoveredRect.value = null
       listVisible.value = false
+      treeVisible.value = false
     }
   })
 })
@@ -698,6 +798,11 @@ defineExpose({
   background: rgba(245, 108, 108, 0.12);
 }
 
+.tree-hover-box {
+  border-color: #E6A23C;
+  background: rgba(230, 162, 60, 0.15);
+}
+
 .highlight-label {
   position: absolute;
   top: -22px;
@@ -740,6 +845,62 @@ defineExpose({
 .text-muted {
   color: #909399;
   font-size: 13px;
+}
+
+.tree-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.tree-section h4 {
+  margin: 0 0 10px;
+  color: #303133;
+  font-size: 14px;
+}
+
+.tree-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tree-node {
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  transition: background 0.15s;
+}
+
+.tree-node:hover {
+  background: #f5f7fa;
+}
+
+.node-tag {
+  color: #409eff;
+  font-weight: bold;
+}
+
+.node-id {
+  color: #67c23a;
+  margin-left: 6px;
+}
+
+.node-aria {
+  color: #e6a23c;
+  margin-left: 6px;
+}
+
+.node-testid {
+  color: #909399;
+  margin-left: 6px;
+}
+
+.node-name {
+  color: #606266;
+  font-weight: bold;
 }
 
 .review-list-actions {

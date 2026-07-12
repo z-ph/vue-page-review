@@ -4,52 +4,52 @@
     "category": "阶段 1：数据模型与工具函数",
     "task": "设计组件树数据结构并编写通用检测函数",
     "steps": [
-      { "step": "定义 ComponentTreeNode 类型：{ tag, selector, rect, role, accessibleName, componentName?, children? }", "completed": false },
-      { "step": "编写 getDomTree(element)：从 body 到元素生成 DOM 祖先链", "completed": false },
-      { "step": "编写 getAriaInfo(element)：提取 role 和 accessible name", "completed": false },
-      { "step": "编写 getElementSelector(element)：生成稳定 CSS selector", "completed": false }
+      { "step": "定义 ComponentTreeNode 类型：{ tag, selector, rect, role, accessibleName, componentName?, children? }", "completed": true },
+      { "step": "编写 getDomTree(element)：从 body 到元素生成 DOM 祖先链", "completed": true },
+      { "step": "编写 getAriaInfo(element)：提取 role 和 accessible name", "completed": true },
+      { "step": "编写 getElementSelector(element)：生成稳定 CSS selector", "completed": true }
     ],
-    "passes": false
+    "passes": true
   },
   {
     "number": 2,
     "category": "阶段 2：框架组件树检测",
     "task": "实现 Vue/React 组件名检测",
     "steps": [
-      { "step": "Vue：探测 __vueParentComponent 等内部属性提取组件名", "completed": false },
-      { "step": "React：探测 __reactFiber$... 内部属性提取组件名", "completed": false },
-      { "step": "添加安全降级：检测不到时只返回 DOM 树", "completed": false }
+      { "step": "Vue：探测 __vueParentComponent 等内部属性提取组件名", "completed": true },
+      { "step": "React：探测 __reactFiber$... 内部属性提取组件名", "completed": true },
+      { "step": "添加安全降级：检测不到时只返回 DOM 树", "completed": true }
     ],
-    "passes": false
+    "passes": true
   },
   {
     "number": 3,
     "category": "阶段 3：UI 面板",
     "task": "在评审工具中添加组件树检查器面板",
     "steps": [
-      { "step": "添加 "组件树" 按钮/标签页打开面板", "completed": false },
-      { "step": "实现树形组件展示 DOM Tree 和 Framework Tree", "completed": false },
-      { "step": "点击节点高亮对应元素", "completed": false },
-      { "step": "双击/选择节点将其设为评审目标", "completed": false }
+      { "step": "添加 "组件树" 按钮/标签页打开面板", "completed": true },
+      { "step": "实现树形组件展示 DOM Tree 和 Framework Tree", "completed": true },
+      { "step": "点击节点高亮对应元素", "completed": true },
+      { "step": "双击/选择节点将其设为评审目标", "completed": true }
     ],
-    "passes": false
+    "passes": true
   },
   {
     "number": 4,
     "category": "阶段 4：数据持久化",
     "task": "将组件树快照存入评审记录",
     "steps": [
-      { "step": "保存评审时同时记录 componentTree 和 aria 字段", "completed": false },
-      { "step": "在评审列表中展示组件树摘要", "completed": false }
+      { "step": "保存评审时同时记录 componentTree 和 aria 字段", "completed": true },
+      { "step": "在评审列表中展示组件树摘要", "completed": true }
     ],
-    "passes": false
+    "passes": true
   },
   {
     "number": 5,
     "category": "阶段 5：构建与验证",
     "task": "构建并验证组件树功能",
     "steps": [
-      { "step": "运行 npm run build", "completed": false },
+      { "step": "运行 npm run build", "completed": true },
       { "step": "在示例页面验证 DOM 树和框架组件树", "completed": false },
       { "step": "验证生产构建下的降级行为", "completed": false }
     ],
