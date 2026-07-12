@@ -176,6 +176,16 @@ function buildMarkdown(data) {
       lines.push(`- **评审建议**：${item.suggestion}`)
       lines.push(`- **创建时间**：${new Date(item.createdAt).toLocaleString()}`)
 
+      if (item.locators && Object.keys(item.locators).length > 0) {
+        lines.push('')
+        lines.push('#### 定位信息')
+        if (item.locators.cssSelector) lines.push(`- **CSS Selector**: \`${item.locators.cssSelector}\``)
+        if (item.locators.xpath) lines.push(`- **XPath**: \`${item.locators.xpath}\``)
+        if (item.locators.aria?.role) lines.push(`- **ARIA Role**: ${item.locators.aria.role}`)
+        if (item.locators.aria?.accessibleName) lines.push(`- **Accessible Name**: ${item.locators.aria.accessibleName}`)
+        if (item.locators.testId) lines.push(`- **data-testid**: ${item.locators.testId}`)
+      }
+
       if (item.screenshots && item.screenshots.length > 0) {
         lines.push('')
         lines.push('#### 截图')

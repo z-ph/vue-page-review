@@ -290,7 +290,8 @@ const form = ref({
   pageUrl: '',
   pageName: '',
   componentTree: null,
-  aria: null
+  aria: null,
+  locators: null
 })
 
 const canSubmit = computed(() => form.value.title.trim() && form.value.suggestion.trim())
@@ -559,6 +560,7 @@ async function captureScreenshots() {
 function openForm(type, viewportRect = null) {
   const env = captureEnv()
   const nodeInfo = selectedElement.value?.el ? getNodeInfo(selectedElement.value.el) : null
+  const locators = nodeInfo ? buildLocators(nodeInfo) : null
   form.value = {
     type,
     title: '',
@@ -574,10 +576,20 @@ function openForm(type, viewportRect = null) {
     pageUrl: env.pageUrl,
     pageName: env.pageName,
     componentTree: componentTree.value,
-    aria: nodeInfo?.aria || null
+    aria: nodeInfo?.aria || null,
+    locators
   }
   selectedScreenshots.value = []
   formVisible.value = true
+}
+
+function buildLocators(nodeInfo) {
+  const locators = {}
+  if (nodeInfo.selector) locators.cssSelector = nodeInfo.selector
+  if (nodeInfo.xpath) locators.xpath = nodeInfo.xpath
+  if (nodeInfo.aria && Object.keys(nodeInfo.aria).length) locators.aria = nodeInfo.aria
+  if (nodeInfo.testId) locators.testId = nodeInfo.testId
+  return Object.keys(locators).length ? locators : null
 }
 
 function resetForm() {
@@ -601,7 +613,8 @@ function resetForm() {
     pageUrl: '',
     pageName: '',
     componentTree: null,
-    aria: null
+    aria: null,
+    locators: null
   }
 }
 
@@ -625,7 +638,8 @@ async function submitReview() {
     status: 'open',
     screenshots,
     componentTree: form.value.componentTree,
-    aria: form.value.aria
+    aria: form.value.aria,
+    locators: form.value.locators
   })
   formVisible.value = false
   emit('add', record)

@@ -4,40 +4,40 @@
     "category": "阶段 1：Locator 计算",
     "task": "实现多策略定位信息提取",
     "steps": [
-      { "step": "编写 getCssSelector(element)：生成稳定 CSS selector", "completed": false },
-      { "step": "编写 getXPath(element)：生成绝对 XPath", "completed": false },
-      { "step": "编写 getAriaLocator(element)：提取 role、accessibleName、aria-labelledby", "completed": false },
-      { "step": "编写 getTestId(element)：提取 data-testid", "completed": false }
+      { "step": "编写 getCssSelector(element)：生成稳定 CSS selector", "completed": true },
+      { "step": "编写 getXPath(element)：生成绝对 XPath", "completed": true },
+      { "step": "编写 getAriaLocator(element)：提取 role、accessibleName、aria-labelledby", "completed": true },
+      { "step": "编写 getTestId(element)：提取 data-testid", "completed": true }
     ],
-    "passes": false
+    "passes": true
   },
   {
     "number": 2,
     "category": "阶段 2：数据模型",
     "task": "将 locators 存入评审记录",
     "steps": [
-      { "step": "扩展 ReviewRecord 类型，新增 locators 字段", "completed": false },
-      { "step": "保存评审时填充 locators", "completed": false }
+      { "step": "扩展 ReviewRecord 类型，新增 locators 字段", "completed": true },
+      { "step": "保存评审时填充 locators", "completed": true }
     ],
-    "passes": false
+    "passes": true
   },
   {
     "number": 3,
     "category": "阶段 3：导出增强",
     "task": "JSON/Markdown/ZIP 导出包含定位信息",
     "steps": [
-      { "step": "JSON 导出包含 locators 对象", "completed": false },
-      { "step": "Markdown 导出新增 "定位信息" 章节", "completed": false },
-      { "step": "ZIP 导出的 JSON/Markdown 同步包含 locators", "completed": false }
+      { "step": "JSON 导出包含 locators 对象", "completed": true },
+      { "step": "Markdown 导出新增 "定位信息" 章节", "completed": true },
+      { "step": "ZIP 导出的 JSON/Markdown 同步包含 locators", "completed": true }
     ],
-    "passes": false
+    "passes": true
   },
   {
     "number": 4,
     "category": "阶段 4：构建与验证",
     "task": "构建并验证导出内容",
     "steps": [
-      { "step": "运行 npm run build", "completed": false },
+      { "step": "运行 npm run build", "completed": true },
       { "step": "创建评审并导出 JSON/Markdown/ZIP，验证 locators 字段", "completed": false }
     ],
     "passes": false
