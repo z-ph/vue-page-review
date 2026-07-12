@@ -1,10 +1,11 @@
-import { toPng, toBlob } from 'html-to-image'
+import { toPng } from 'html-to-image'
 
 export const SCREENSHOT_TYPES = {
   ELEMENT: 'element',
   VIEWPORT: 'viewport',
   FULL_PAGE: 'fullpage',
-  BOX: 'box'
+  BOX: 'box',
+  TARGETS: 'targets'
 }
 
 export function generateScreenshotFilename(type) {

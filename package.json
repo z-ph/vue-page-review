@@ -1,6 +1,6 @@
 {
   "name": "vue-page-review",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "A Vue 3 page review tool for collecting UI feedback with element selection and viewport boxing.",
   "type": "module",
   "main": "./dist/vue-page-review.umd.cjs",

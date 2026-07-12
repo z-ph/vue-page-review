@@ -17,7 +17,8 @@ export function usePageReview(options = {}) {
     if (typeof window === 'undefined') return []
     try {
       const raw = window.localStorage.getItem(storageKey)
-      return raw ? JSON.parse(raw) : []
+      const list = raw ? JSON.parse(raw) : []
+      return list.map(migrateRecord)
     } catch {
       return []
     }
@@ -71,7 +72,7 @@ export function usePageReview(options = {}) {
 
   function clearAllReviews() {
     reviews.value = []
-    saveToStorage(reviews.value)
+    saveToStorage([])
   }
 
   function buildReportData() {
@@ -144,6 +145,28 @@ export function usePageReview(options = {}) {
   }
 }
 
+export function migrateRecord(record) {
+  if (!record || record.targets) return record
+  const target = record.type === 'element'
+    ? {
+        type: 'element',
+        selector: record.selector,
+        elementText: record.elementText,
+        elementRect: record.elementRect,
+        componentTree: record.componentTree,
+        aria: record.aria,
+        locators: record.locators
+      }
+    : {
+        type: 'viewport',
+        viewportRect: record.viewportRect
+      }
+  return {
+    ...record,
+    targets: [target]
+  }
+}
+
 function buildMarkdown(data) {
   const lines = [
     '# 页面评审报告',
@@ -159,19 +182,24 @@ function buildMarkdown(data) {
     lines.push('')
     list.forEach((item, idx) => {
       lines.push(`### ${idx + 1}. ${item.title || '未命名评审'}`)
-      lines.push(`- **类型**：${item.type === 'element' ? '元素评审' : '视图范围评审'}`)
       lines.push(`- **严重等级**：${severityText(item.severity)}`)
       lines.push(`- **状态**：${item.status === 'resolved' ? '已解决' : '待处理'}`)
       lines.push(`- **窗口尺寸**：${item.viewport?.width} × ${item.viewport?.height}`)
       if (item.scroll) {
         lines.push(`- **滚动位置**：x=${item.scroll.x}, y=${item.scroll.y}`)
       }
-      if (item.type === 'element' && item.elementRect) {
-        lines.push(`- **元素选择器**：\`${item.selector}\``)
-        lines.push(`- **元素位置**：x=${item.elementRect.x}, y=${item.elementRect.y}, width=${item.elementRect.width}, height=${item.elementRect.height}`)
-        if (item.elementText) lines.push(`- **元素文本**：${item.elementText}`)
-      } else if (item.viewportRect) {
-        lines.push(`- **框选范围**：x=${item.viewportRect.x}, y=${item.viewportRect.y}, width=${item.viewportRect.width}, height=${item.viewportRect.height}`)
+
+      const targets = item.targets || []
+      if (targets.length > 0) {
+        lines.push(`- **评审目标数**：${targets.length}`)
+        targets.forEach((t, tidx) => {
+          if (t.type === 'element' && t.elementRect) {
+            lines.push(`  - 目标 ${tidx + 1}（元素）：\`${t.selector}\` x=${t.elementRect.x}, y=${t.elementRect.y}, w=${t.elementRect.width}, h=${t.elementRect.height}`)
+            if (t.elementText) lines.push(`    文本：${t.elementText}`)
+          } else if (t.viewportRect) {
+            lines.push(`  - 目标 ${tidx + 1}（框选）：x=${t.viewportRect.x}, y=${t.viewportRect.y}, w=${t.viewportRect.width}, h=${t.viewportRect.height}`)
+          }
+        })
       }
       lines.push(`- **评审建议**：${item.suggestion}`)
       lines.push(`- **创建时间**：${new Date(item.createdAt).toLocaleString()}`)

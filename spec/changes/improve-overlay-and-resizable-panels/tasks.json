@@ -1,0 +1,44 @@
+[
+  {
+    "number": 1,
+    "category": "阶段 1：Z-Index 分层",
+    "task": "调整 overlay 与弹窗/抽屉的层级",
+    "steps": [
+      { "step": "overlay z-index 低于 modal/drawer", "completed": true },
+      { "step": "验证弹窗可正常点击", "completed": true }
+    ],
+    "passes": true
+  },
+  {
+    "number": 2,
+    "category": "阶段 2：弹窗拖动与调整大小",
+    "task": "实现评审表单的拖动和 resize",
+    "steps": [
+      { "step": "表单 header 支持拖动", "completed": true },
+      { "step": "表单右下角 resize handle", "completed": true },
+      { "step": "拖动/resize 不触发页面选择", "completed": true }
+    ],
+    "passes": true
+  },
+  {
+    "number": 3,
+    "category": "阶段 3：工具栏调整大小",
+    "task": "实现工具栏 resize",
+    "steps": [
+      { "step": "工具栏右下角 resize handle", "completed": true },
+      { "step": "resize 不触发框选", "completed": true }
+    ],
+    "passes": true
+  },
+  {
+    "number": 4,
+    "category": "阶段 4：构建与同步",
+    "task": "Vue/React 双包同步并构建发布",
+    "steps": [
+      { "step": "Vue 包实现并通过 build", "completed": true },
+      { "step": "React 包实现并通过 build", "completed": true },
+      { "step": "发布新版本到 npm", "completed": false }
+    ],
+    "passes": false
+  }
+]

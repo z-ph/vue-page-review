@@ -1,0 +1,59 @@
+[
+  {
+    "number": 1,
+    "category": "阶段 1：数据模型迁移",
+    "task": "将评审记录从单目标改为 targets 数组并兼容旧数据",
+    "steps": [
+      { "step": "useReview 加载时 migrateRecord 旧记录", "completed": true },
+      { "step": "addReview 保存 targets 数组", "completed": true },
+      { "step": "Markdown/JSON/ZIP 导出支持多目标", "completed": true }
+    ],
+    "passes": true
+  },
+  {
+    "number": 2,
+    "category": "阶段 2：元素多选",
+    "task": "实现 Ctrl/Cmd 多选元素",
+    "steps": [
+      { "step": "selectedElements 改为数组", "completed": true },
+      { "step": "点击元素根据 modifier 键切换或替换选择", "completed": true },
+      { "step": "已选元素显示删除小图标", "completed": true }
+    ],
+    "passes": true
+  },
+  {
+    "number": 3,
+    "category": "阶段 3：框选多选与调整",
+    "task": "实现多框选与大小调整",
+    "steps": [
+      { "step": "selectedBoxes 改为数组", "completed": true },
+      { "step": "Ctrl 拖拽新增框选", "completed": true },
+      { "step": "每个框选显示 8 个 resize handle", "completed": true },
+      { "step": "拖拽 handle 实时更新 box rect", "completed": true }
+    ],
+    "passes": true
+  },
+  {
+    "number": 4,
+    "category": "阶段 4：工具栏与表单",
+    "task": "添加评审/取消选择按钮并更新表单",
+    "steps": [
+      { "step": "工具栏添加 评审(N) 和 取消选择 按钮", "completed": true },
+      { "step": "点击评审打开表单并传入所有 targets", "completed": true },
+      { "step": "表单截图选项改为 选中目标/视口/完整页面", "completed": true },
+      { "step": "提交后清空选择", "completed": true }
+    ],
+    "passes": true
+  },
+  {
+    "number": 5,
+    "category": "阶段 5：构建与同步",
+    "task": "Vue/React 双包同步实现并构建发布",
+    "steps": [
+      { "step": "Vue 包实现并通过 build", "completed": true },
+      { "step": "React 包实现并通过 build", "completed": true },
+      { "step": "发布新版本到 npm", "completed": false }
+    ],
+    "passes": false
+  }
+]
