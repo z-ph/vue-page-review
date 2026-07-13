@@ -7,8 +7,8 @@
       { "step": "评审列表抽屉设置 z-index=10003", "completed": true },
       { "step": "组件树抽屉设置 z-index=10003", "completed": true },
       { "step": "Vue 包构建通过", "completed": true },
-      { "step": "发布 v0.5.1 到 npm", "completed": false }
+      { "step": "发布 v0.5.1 到 npm", "completed": true }
     ],
-    "passes": false
+    "passes": true
   }
 ]
