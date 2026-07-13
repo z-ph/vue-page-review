@@ -61,7 +61,7 @@
       <div
         v-if="hoveredRect && mode === 'element' && !isDraggingBox && !resizingBoxId"
         class="highlight-box hover-box"
-        :style="highlightStyle(toViewportRect(hoveredRect))"
+        :style="highlightStyle(hoveredRect)"
       >
         <span class="highlight-label">{{ hoveredTag }}</span>
       </div>
@@ -71,7 +71,7 @@
         v-for="(item, idx) in selectedElements"
         :key="'el-' + idx"
         class="highlight-box selected-box"
-        :style="highlightStyle(toViewportRect(item.rect))"
+        :style="highlightStyle(item.rect)"
         @click.stop="onSelectedElementClick(item, $event)"
       >
         <span class="highlight-label">
@@ -533,8 +533,8 @@ function onMouseMove(e) {
   }
   const rect = target.getBoundingClientRect()
   hoveredRect.value = {
-    x: rect.left + window.scrollX,
-    y: rect.top + window.scrollY,
+    x: rect.left,
+    y: rect.top,
     width: rect.width,
     height: rect.height
   }
@@ -559,6 +559,12 @@ function onElementClick(e) {
     tag: target.tagName.toLowerCase(),
     text: target.innerText?.slice(0, 40) || '',
     rect: {
+      x: rect.left,
+      y: rect.top,
+      width: rect.width,
+      height: rect.height
+    },
+    docRect: {
       x: rect.left + window.scrollX,
       y: rect.top + window.scrollY,
       width: rect.width,
@@ -787,8 +793,27 @@ function onKeyDown(e) {
   }
 }
 
+function refreshElementRects() {
+  selectedElements.value = selectedElements.value.map(item => {
+    const el = item.el || document.querySelector(item.selector)
+    if (!el) return item
+    const rect = el.getBoundingClientRect()
+    return {
+      ...item,
+      el,
+      rect: {
+        x: rect.left,
+        y: rect.top,
+        width: rect.width,
+        height: rect.height
+      }
+    }
+  })
+}
+
 function onScroll() {
   scrollPos.value = { x: window.scrollX, y: window.scrollY }
+  refreshElementRects()
 }
 
 function handleOverlayClick() {}
@@ -819,6 +844,12 @@ function onTreeNodeSelect(node) {
     tag: el.tagName.toLowerCase(),
     text: el.innerText?.slice(0, 40) || '',
     rect: {
+      x: rect.left,
+      y: rect.top,
+      width: rect.width,
+      height: rect.height
+    },
+    docRect: {
       x: rect.left + window.scrollX,
       y: rect.top + window.scrollY,
       width: rect.width,
@@ -869,7 +900,7 @@ function buildTargets() {
       type: 'element',
       selector: item.selector,
       elementText: item.text,
-      elementRect: item.rect,
+      elementRect: item.docRect || item.rect,
       componentTree: nodeInfo ? getComponentTree(item.el) : null,
       aria: nodeInfo?.aria || null,
       locators: nodeInfo ? buildLocators(nodeInfo) : null
