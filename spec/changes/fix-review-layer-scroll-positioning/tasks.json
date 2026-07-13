@@ -28,11 +28,11 @@
     "category": "构建与发布",
     "task": "双包同步修复并发布",
     "steps": [
-      { "step": "Vue 包修复并通过 build", "completed": false },
-      { "step": "React 包修复并通过 build", "completed": false },
-      { "step": "发布新版本到 npm", "completed": false },
-      { "step": "更新 bidding 项目并部署", "completed": false }
+      { "step": "Vue 包修复并通过 build", "completed": true },
+      { "step": "React 包修复并通过 build", "completed": true },
+      { "step": "发布新版本到 npm", "completed": true },
+      { "step": "更新 bidding 项目并部署", "completed": true }
     ],
-    "passes": false
+    "passes": true
   }
 ]
