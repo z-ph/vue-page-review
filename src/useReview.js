@@ -236,10 +236,14 @@ function downloadBlob(blob, filename) {
   const a = document.createElement('a')
   a.href = url
   a.download = filename
+  a.style.display = 'none'
   document.body.appendChild(a)
   a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
+  // Delay cleanup so automation tools (e.g. Playwright) have time to capture the download event.
+  setTimeout(() => {
+    if (a.parentNode) document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }, 1000)
 }
 
 function formatDate() {
