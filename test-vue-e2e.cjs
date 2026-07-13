@@ -13,12 +13,12 @@ function check(name, ok, extra = '') {
 
 async function openMoreMenu(page) {
   await page.locator('.vpr-review-toolbar .el-dropdown .el-button').click()
-  await page.waitForSelector('.el-dropdown-menu__item', { state: 'visible' })
+  await page.waitForSelector('.el-dropdown-menu__item:visible', { state: 'visible' })
 }
 
 async function clickMoreItem(page, label) {
   await openMoreMenu(page)
-  await page.locator('.el-dropdown-menu__item', { hasText: label }).click()
+  await page.locator('.el-dropdown-menu__item:visible').filter({ hasText: label }).click()
 }
 
 async function waitBlob(page, minCount) {
@@ -125,15 +125,15 @@ async function waitBlob(page, minCount) {
   await openMoreMenu(page)
   await page.mouse.move(10, 10)
   await page.waitForTimeout(300)
-  const menuStillOpen = await page.locator('.el-dropdown-menu__item').first().isVisible()
+  const menuStillOpen = await page.locator('.el-dropdown-menu__item:visible').first().isVisible()
   check('「更多」下拉点击触发、移开不消失', menuStillOpen)
-  const menuItems = await page.locator('.el-dropdown-menu__item').allInnerTexts()
+  const menuItems = await page.locator('.el-dropdown-menu__item:visible').allInnerTexts()
   check('下拉菜单项齐全（6 项）', menuItems.length === 6, menuItems.join(' / '))
 
   // 12. 导出 JSON（字节 + 真实下载事件）
   const [jsonDownload] = await Promise.all([
     page.waitForEvent('download', { timeout: 10000 }).catch(() => null),
-    page.locator('.el-dropdown-menu__item', { hasText: '导出 JSON' }).click()
+    page.locator('.el-dropdown-menu__item:visible').filter({ hasText: '导出 JSON' }).click()
   ])
   const jsonBlob = await waitBlob(page, 1)
   const jsonText = Buffer.from(jsonBlob.bytes).toString('utf8')
@@ -158,11 +158,24 @@ async function waitBlob(page, minCount) {
   const isZip = zipBlob.bytes[0] === 0x50 && zipBlob.bytes[1] === 0x4b
   check('导出 ZIP 可下载且为合法 ZIP', isZip, `${zipBlob.bytes.length} bytes, 魔数 ${zipBlob.bytes.slice(0, 2)}`)
 
-  // 15. 评审列表抽屉
+  // 15. 评审列表抽屉 + 头部「操作」下拉
   await clickMoreItem(page, '评审列表')
   await page.waitForSelector('.el-drawer:visible', { state: 'visible' })
   const drawerText = await page.locator('.el-drawer:visible').first().innerText()
   check('评审列表抽屉显示已保存记录', drawerText.includes('E2E 测试标题'))
+  const headerButtons = await page.locator('.el-drawer:visible .el-drawer__header .el-button').count()
+  check('抽屉头部只有「操作」一个按钮', headerButtons === 1, `按钮数 ${headerButtons}`)
+  await page.locator('.el-drawer:visible .el-drawer__header .el-dropdown .el-button').click()
+  await page.waitForSelector('.el-drawer:visible .el-dropdown-menu__item', { state: 'visible' })
+  const drawerMenuItems = await page.locator('.el-drawer:visible .el-dropdown-menu__item').allInnerTexts()
+  check(
+    '抽屉「操作」下拉 4 项齐全',
+    drawerMenuItems.length === 4 && drawerMenuItems[3].includes('清空本页'),
+    drawerMenuItems.join(' / ')
+  )
+  // 再点一次触发按钮收起下拉，避免遮挡关闭按钮
+  await page.locator('.el-drawer:visible .el-drawer__header .el-dropdown .el-button').click()
+  await page.waitForTimeout(300)
   await page.locator('.el-drawer:visible .el-drawer__close-btn').first().click()
   await page.waitForTimeout(600)
 
