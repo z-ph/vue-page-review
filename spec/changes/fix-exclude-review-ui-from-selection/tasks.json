@@ -1,0 +1,25 @@
+[
+  {
+    "number": 1,
+    "category": "排除逻辑增强",
+    "task": "扩展 getSafeTarget 与 onMouseDown 的排除范围",
+    "steps": [
+      { "step": "getSafeTarget 排除 ElementPlus 弹出层", "completed": true },
+      { "step": "onMouseDown 排除 ElementPlus 弹出层", "completed": true },
+      { "step": "仅页面元素被选中时才阻止默认事件", "completed": true }
+    ],
+    "passes": true
+  },
+  {
+    "number": 2,
+    "category": "构建与发布",
+    "task": "双包同步修复并发布",
+    "steps": [
+      { "step": "Vue 包修复并通过 build", "completed": false },
+      { "step": "React 包修复并通过 build", "completed": false },
+      { "step": "发布新版本到 npm", "completed": false },
+      { "step": "更新 bidding 项目并部署", "completed": false }
+    ],
+    "passes": false
+  }
+]

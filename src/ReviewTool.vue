@@ -509,9 +509,12 @@ function getElementSelector(el) {
 }
 
 function getSafeTarget(e) {
-  const target = document.elementFromPoint(e.clientX, e.clientY)
-  if (!target) return null
+  const target = e.target
+  if (!target || !(target instanceof Element)) return null
   if (target.closest('.review-overlay')) return null
+  if (target.closest('.el-dropdown-menu')) return null
+  if (target.closest('.el-popper')) return null
+  if (target.closest('.el-overlay')) return null
   return target
 }
 
@@ -592,7 +595,7 @@ function removeSelectedElement(item) {
 function onMouseDown(e) {
   if (isDraggingToolbar.value) return
   if (mode.value !== 'viewport' || formVisible.value || resizingBoxId.value) return
-  if (e.target.closest('.review-overlay')) return
+  if (!getSafeTarget(e)) return
   e.preventDefault()
   isDraggingBox.value = true
   dragStart.value = { x: e.clientX, y: e.clientY }

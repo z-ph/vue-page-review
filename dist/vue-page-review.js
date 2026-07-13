@@ -3399,8 +3399,8 @@ const Gr = (e, o) => {
       return E.join(" > ");
     }
     function vt(A) {
-      const E = document.elementFromPoint(A.clientX, A.clientY);
-      return !E || E.closest(".review-overlay") ? null : E;
+      const E = A.target;
+      return !E || !(E instanceof Element) || E.closest(".review-overlay") || E.closest(".el-dropdown-menu") || E.closest(".el-popper") || E.closest(".el-overlay") ? null : E;
     }
     function dt(A) {
       return A.ctrlKey || A.metaKey;
@@ -3456,7 +3456,7 @@ const Gr = (e, o) => {
       E > -1 && L.value.splice(E, 1), L.value.length === 0 && (H.value = null);
     }
     function Gt(A) {
-      tt.value || m.value !== "viewport" || f.value || N.value || A.target.closest(".review-overlay") || (A.preventDefault(), F.value = !0, a.value = { x: A.clientX, y: A.clientY }, b.value = { x: a.value.x, y: a.value.y, width: 0, height: 0 });
+      tt.value || m.value !== "viewport" || f.value || N.value || vt(A) && (A.preventDefault(), F.value = !0, a.value = { x: A.clientX, y: A.clientY }, b.value = { x: a.value.x, y: a.value.y, width: 0, height: 0 });
     }
     function qt(A) {
       if (tt.value) return;
@@ -4381,7 +4381,7 @@ const Gr = (e, o) => {
       ]);
     };
   }
-}, Bi = /* @__PURE__ */ Gr(Ti, [["__scopeId", "data-v-b19d62f1"]]);
+}, Bi = /* @__PURE__ */ Gr(Ti, [["__scopeId", "data-v-a7c5e3b1"]]);
 export {
   Bi as ReviewTool,
   Bi as default,
