@@ -252,10 +252,25 @@
           <div class="vpr-drawer-header">
             <span class="vpr-drawer-title">当前页面评审意见</span>
             <div class="vpr-drawer-actions">
-              <el-button type="primary" size="small" @click="handleExportMarkdown">导出 Markdown</el-button>
-              <el-button size="small" @click="handleExportJSON">导出 JSON</el-button>
-              <el-button v-if="enableZipExport" size="small" @click="handleExportZIP">导出 ZIP</el-button>
-              <el-button type="danger" size="small" @click="clearPage">清空本页</el-button>
+              <el-dropdown
+                trigger="click"
+                placement="bottom-end"
+                popper-class="vpr-popper"
+                :teleported="false"
+              >
+                <el-button size="small">
+                  操作
+                  <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+                </el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item @click="handleExportMarkdown">导出 Markdown</el-dropdown-item>
+                    <el-dropdown-item @click="handleExportJSON">导出 JSON</el-dropdown-item>
+                    <el-dropdown-item v-if="enableZipExport" @click="handleExportZIP">导出 ZIP</el-dropdown-item>
+                    <el-dropdown-item divided style="color: var(--el-color-danger)" @click="clearPage">清空本页</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
             </div>
           </div>
         </template>

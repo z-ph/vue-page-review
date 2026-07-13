@@ -1,0 +1,22 @@
+[
+  {
+    "number": 1,
+    "category": "改造",
+    "task": "评审列表抽屉头部操作收敛为「操作」下拉菜单",
+    "steps": [
+      {
+        "step": "将 #header 插槽中的 4 个按钮替换为 click 触发的 el-dropdown（导出 Markdown/导出 JSON/导出 ZIP/清空本页 danger）",
+        "completed": true
+      },
+      {
+        "step": "保持各操作触发逻辑不变（导出、清空确认弹窗）",
+        "completed": true
+      },
+      {
+        "step": "vue-test-app 端到端验证：下拉 4 项齐全、导出正常、关闭按钮可点",
+        "completed": true
+      }
+    ],
+    "passes": true
+  }
+]
