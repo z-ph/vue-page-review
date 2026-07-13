@@ -4180,7 +4180,8 @@ const Zn = (e, o) => {
             "onUpdate:modelValue": E[14] || (E[14] = (q) => x.value = q),
             title: "组件树检查器",
             size: "480px",
-            "with-header": !0
+            "with-header": !0,
+            "z-index": 10003
           }, {
             default: st(() => [
               V.value ? (pt(), kt("div", ai, [
@@ -4231,7 +4232,8 @@ const Zn = (e, o) => {
             "onUpdate:modelValue": E[15] || (E[15] = (q) => g.value = q),
             title: "当前页面评审意见",
             size: "480px",
-            "with-header": !0
+            "with-header": !0,
+            "z-index": 10003
           }, {
             default: st(() => [
               ht("div", vi, [
@@ -4363,7 +4365,7 @@ const Zn = (e, o) => {
       ]);
     };
   }
-}, Ti = /* @__PURE__ */ Zn(zi, [["__scopeId", "data-v-2acdced6"]]);
+}, Ti = /* @__PURE__ */ Zn(zi, [["__scopeId", "data-v-d98bdb90"]]);
 export {
   Ti as ReviewTool,
   Ti as default,

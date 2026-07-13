@@ -195,6 +195,7 @@
         title="组件树检查器"
         size="480px"
         :with-header="true"
+        :z-index="10003"
       >
         <el-empty v-if="!componentTree" description="先选择一个元素以查看组件树" />
         <div v-else class="tree-panel">
@@ -241,6 +242,7 @@
         title="当前页面评审意见"
         size="480px"
         :with-header="true"
+        :z-index="10003"
       >
         <div class="review-list-actions">
           <el-button size="small" type="primary" @click="exportToMarkdown">导出 Markdown</el-button>

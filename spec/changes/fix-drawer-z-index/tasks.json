@@ -1,0 +1,14 @@
+[
+  {
+    "number": 1,
+    "category": "修复抽屉层级",
+    "task": "为 el-drawer 显式设置 z-index 避免被高亮遮挡",
+    "steps": [
+      { "step": "评审列表抽屉设置 z-index=10003", "completed": true },
+      { "step": "组件树抽屉设置 z-index=10003", "completed": true },
+      { "step": "Vue 包构建通过", "completed": true },
+      { "step": "发布 v0.5.1 到 npm", "completed": false }
+    ],
+    "passes": false
+  }
+]
