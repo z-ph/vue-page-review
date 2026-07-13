@@ -53,7 +53,7 @@ function onMouseMove(e) {
 }
 ```
 
-`getSafeTarget` 会过滤掉事件目标位于 `.review-overlay` 内部的情况，防止评审 UI 自身被选中。
+`getSafeTarget` 会过滤掉事件目标位于 `.vpr-review-overlay` 内部的情况，防止评审 UI 自身被选中。
 
 ### 点击选择
 
@@ -352,13 +352,13 @@ export function migrateRecord(record) {
 
 ### 工具栏
 
-- 拖拽：只能在 `.toolbar-title` 或 `.review-toolbar` 区域按下并拖动。
-- 缩放：右下角 `.toolbar-resize-handle` 支持东南方向缩放，最小宽度 400px，最小高度 48px。
+- 拖拽：只能在 `.vpr-toolbar-title` 或 `.vpr-review-toolbar` 区域按下并拖动。
+- 缩放：右下角 `.vpr-toolbar-resize-handle` 支持东南方向缩放，最小宽度 400px，最小高度 48px。
 
 ### 表单弹窗
 
-- 拖拽：只能在 `.modal-header` 区域按下。
-- 缩放：右下角 `.modal-resize-handle`，最小宽度 360px，最小高度 300px。
+- 拖拽：只能在 `.el-dialog__header` 区域按下。
+- 缩放：右下角 `.vpr-modal-resize-handle`，最小宽度 360px，最小高度 300px。
 
 ### 框选区域
 

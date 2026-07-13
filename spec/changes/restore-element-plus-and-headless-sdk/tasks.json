@@ -1,0 +1,64 @@
+# 实施任务
+```json
+[
+  {
+    "number": 1,
+    "category": "阶段 1：依赖与配置",
+    "task": "恢复 element-plus 为可选 peer dependency 并配置按需引入",
+    "steps": [
+      { "step": "将 element-plus 与 @element-plus/icons-vue 加回 package.json peerDependencies（标记为 optional）", "completed": true },
+      { "step": "更新 vite.config.js 使其支持 tree-shaking 外部化", "completed": true },
+      { "step": "运行 pnpm install 验证安装", "completed": true }
+    ],
+    "passes": true
+  },
+  {
+    "number": 2,
+    "category": "阶段 2：暴露无头 composables",
+    "task": "从 ReviewTool.vue 抽取交互逻辑为独立 composables",
+    "steps": [
+      { "step": "创建 src/composables/useElementSelection.js：hover/click 选择、Ctrl/Cmd 多选、滚动跟随", "completed": true },
+      { "step": "创建 src/composables/useViewportBoxing.js：拖拽创建框选、8 方向调整大小、多框选", "completed": true },
+      { "step": "创建 src/composables/useDragResize.js：通用面板拖拽与尺寸调整", "completed": true },
+      { "step": "创建 src/composables/useHighlightOverlay.js：文档坐标到视口坐标转换与样式 helper", "completed": true },
+      { "step": "在 src/index.js 中导出所有新 composables", "completed": true }
+    ],
+    "passes": true
+  },
+  {
+    "number": 3,
+    "category": "阶段 3：ReviewTool 使用 element-plus 重构 UI",
+    "task": "恢复 element-plus 组件并改进工具栏布局",
+    "steps": [
+      { "step": "ReviewTool.vue 引入 element-plus 组件（按钮、下拉、表单、抽屉等）", "completed": true },
+      { "step": "将导出下拉改为点击触发（click）", "completed": true },
+      { "step": "把次要操作（组件树、评审列表、导出、取消选择）收进一个下拉菜单", "completed": true },
+      { "step": "保留弹窗和抽屉的拖拽/缩放能力", "completed": true }
+    ],
+    "passes": true
+  },
+  {
+    "number": 4,
+    "category": "阶段 4：ReviewTool 使用无头 composables",
+    "task": "让 ReviewTool 复用新 composables 而不是内联逻辑",
+    "steps": [
+      { "step": "在 ReviewTool.vue 中引入 useElementSelection、useViewportBoxing、useDragResize", "completed": true },
+      { "step": "删除组件内重复的交互逻辑", "completed": true },
+      { "step": "保持现有 props、emits 与行为不变", "completed": true }
+    ],
+    "passes": true
+  },
+  {
+    "number": 5,
+    "category": "阶段 5：文档与测试",
+    "task": "更新文档并验证端到端测试",
+    "steps": [
+      { "step": "更新 README.md / README.zh-CN.md：恢复 element-plus peer dependency 说明", "completed": true },
+      { "step": "更新 docs/usage.md / usage.en.md：新增无头 composables 使用示例", "completed": true },
+      { "step": "运行 pnpm build 验证构建成功", "completed": true },
+      { "step": "在 bidding-prototype 中验证 test-page-review-core.cjs 与 test-zip-export.cjs 通过（未执行：约束禁止访问 bidding-prototype 目录；改由 examples/vue-test-app + Playwright 端到端验证 29 项检查全部通过）", "completed": false }
+    ],
+    "passes": false
+  }
+]
+```

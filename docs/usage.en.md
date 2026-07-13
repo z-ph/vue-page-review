@@ -9,14 +9,15 @@
 1. [Installation and Peer Dependencies](#installation-and-peer-dependencies)
 2. [Basic Integration with the ReviewTool Component](#basic-integration-with-the-reviewtool-component)
 3. [Advanced Integration with usePageReview](#advanced-integration-with-usepagereview)
-4. [Complete Props Reference](#complete-props-reference)
-5. [Events / Callbacks](#events--callbacks)
-6. [Screenshot Options](#screenshot-options)
-7. [Export Formats](#export-formats)
-8. [Image Upload Configuration](#image-upload-configuration)
-9. [Customizing Styles](#customizing-styles)
-10. [Vue 3 Notes](#vue-3-notes)
-11. [Minimal Runnable Example](#minimal-runnable-example)
+4. [Headless Interaction Composables](#headless-interaction-composables)
+5. [Complete Props Reference](#complete-props-reference)
+6. [Events / Callbacks](#events--callbacks)
+7. [Screenshot Options](#screenshot-options)
+8. [Export Formats](#export-formats)
+9. [Image Upload Configuration](#image-upload-configuration)
+10. [Customizing Styles](#customizing-styles)
+11. [Vue 3 Notes](#vue-3-notes)
+12. [Minimal Runnable Example](#minimal-runnable-example)
 
 ---
 
@@ -45,9 +46,21 @@ yarn add vue-page-review
 }
 ```
 
+If you use the default `ReviewTool` UI, also install the **optional** peer dependencies (not needed if you only use the headless composables):
+
+```bash
+pnpm add element-plus @element-plus/icons-vue
+```
+
+The default UI imports Element Plus components by name (tree-shakable). You also need to import the Element Plus styles in your entry:
+
+```js
+import 'element-plus/dist/index.css'
+```
+
 ### Import Styles
 
-The component relies on its bundled CSS. Import it in your entry file or page:
+`vue-page-review`'s own styles are **injected automatically** when `ReviewTool` mounts (a `<style id="vpr-styles">` tag is appended to `document.head`, idempotently). The manual import below still works and is kept only for backward compatibility or for overriding styles:
 
 ```js
 import 'vue-page-review/style.css'
@@ -67,7 +80,7 @@ The simplest integration is to mount `ReviewTool` and control review mode with `
 <script setup>
 import { ref } from 'vue'
 import { ReviewTool } from 'vue-page-review'
-import 'vue-page-review/style.css'
+import 'element-plus/dist/index.css' // required by the default UI
 
 const active = ref(false)
 </script>
@@ -143,6 +156,77 @@ const {
 - `exportToZIP()`: asynchronously downloads a ZIP containing JSON, Markdown, and screenshots.
 
 > **Note**: `screenshot.js` and `inspector.js` are internal utilities used by `ReviewTool` and are **not** exported from the public entry. If you build a fully custom UI, use `html-to-image` directly for screenshots.
+
+---
+
+## Headless Interaction Composables
+
+If `usePageReview` is not enough and you want to reuse the low-level selection, boxing, drag, and resize logic behind `ReviewTool` (no UI rendered, no Element Plus required), import the headless composables directly:
+
+```vue
+<script setup>
+import { ref } from 'vue'
+import {
+  useElementSelection,
+  useViewportBoxing,
+  useDragResize
+} from 'vue-page-review'
+
+const active = ref(true)
+const mode = ref('element')
+const onIgnoreTarget = (target) => !!target.closest('.my-review-overlay')
+
+const { hoveredRect, selectedElements } = useElementSelection({ active, mode, onIgnoreTarget })
+const { selectedBoxes, startResize: startBoxResize } = useViewportBoxing({
+  active,
+  mode,
+  onIgnoreTarget,
+  onBoxCreate: (box, e) => console.log('box created', box)
+})
+const { position, size, onDragStart, onResizeStart } = useDragResize({
+  initialPosition: { x: 0, y: 0 },
+  initialSize: { width: 400, height: null },
+  isDragHandle: (target) => target.classList?.contains('my-panel-header')
+})
+</script>
+
+<template>
+  <div class="my-review-overlay">
+    <div
+      v-if="hoveredRect"
+      class="my-highlight-box"
+      :style="{
+        left: hoveredRect.x + 'px',
+        top: hoveredRect.y + 'px',
+        width: hoveredRect.width + 'px',
+        height: hoveredRect.height + 'px'
+      }"
+    />
+    <div
+      class="my-panel"
+      :style="{
+        left: `calc(50% + ${position.x}px)`,
+        top: `calc(50% + ${position.y}px)`,
+        width: size.width + 'px'
+      }"
+      @mousedown="onDragStart"
+    >
+      <div class="my-panel-header">Draggable panel</div>
+      <div class="my-panel-resize" @mousedown.stop="onResizeStart" />
+    </div>
+  </div>
+</template>
+```
+
+### Composable API Cheat Sheet
+
+| Composable | Purpose | Main returns (all refs) |
+| --- | --- | --- |
+| `useElementSelection({ active, mode, onIgnoreTarget })` | Element hover / selection | `hoveredRect`, `hoveredTag`, `selectedElements`, `selectElement`, `removeSelectedElement`, `clearSelectedElements`, `refreshRects` |
+| `useViewportBoxing({ active, mode, onIgnoreTarget, onBoxCreate })` | Viewport boxing | `selectedBoxes`, `dragRect`, `resizingBoxId`, `removeBox`, `clearBoxes`, `startResize`, `toViewportRect` |
+| `useDragResize({ initialPosition, initialSize, isDragHandle, minWidth, minHeight, measureRef })` | Panel drag / resize | `position`, `size`, `isDragging`, `isResizing`, `onDragStart`, `onResizeStart` |
+
+These composables **do not depend on** `usePageReview`; they only manage interaction state and can be combined with any data layer. `active` / `mode` accept either refs or plain values.
 
 ---
 
@@ -326,29 +410,29 @@ The built-in default uploader:
 
 ## Customizing Styles
 
-Default styles are provided by `vue-page-review/style.css`. Override the class names in your own CSS.
+Default styles are injected automatically when `ReviewTool` mounts (`<style id="vpr-styles">`), or can be imported manually via `import 'vue-page-review/style.css'`. All custom classes use the `vpr-` prefix; override them in your own CSS.
 
 ### Commonly Overridden Classes
 
 | Class | Description |
 | --- | --- |
-| `.review-overlay` | Review overlay root, `pointer-events: none`, z-index 9000 |
-| `.review-toolbar` | Top floating toolbar, z-index 10000 |
-| `.highlight-box` / `.selected-box` / `.hover-box` | Element highlight boxes |
-| `.drag-rect` | Box-selection areas |
-| `.resize-handle` | Eight resize handles on box selections |
-| `.review-modal` | Review form modal, z-index 10002 |
-| `.review-drawer` | Right-side drawer, z-index 10003 |
+| `.vpr-review-overlay` | Review overlay root, `pointer-events: none`, z-index 9000 |
+| `.vpr-review-toolbar` | Top floating toolbar, z-index 10000 |
+| `.vpr-highlight-box` / `.vpr-selected-box` / `.vpr-hover-box` | Element highlight boxes |
+| `.vpr-drag-rect` | Box-selection areas |
+| `.vpr-resize-handle` | Eight resize handles on box selections |
+| `.vpr-review-dialog` | Review form dialog (el-dialog), z-index 10002 |
+| `.vpr-drawer-layer` | Right-side drawer overlay (el-drawer), z-index 10003 |
 
 ### Example: Theme Override
 
 ```css
-.review-toolbar {
+.vpr-review-toolbar {
   background: #1a1a1a;
   color: #fff;
 }
 
-.highlight-box.selected-box {
+.vpr-highlight-box.vpr-selected-box {
   border-color: #ff5722;
   background: rgba(255, 87, 34, 0.12);
 }
@@ -377,7 +461,7 @@ Default styles are provided by `vue-page-review/style.css`. Override the class n
 <script setup>
 import { ref } from 'vue'
 import { ReviewTool } from 'vue-page-review'
-import 'vue-page-review/style.css'
+import 'element-plus/dist/index.css' // required by the default UI
 
 const active = ref(false)
 const upload = async (blob, filename) => {

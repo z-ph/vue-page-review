@@ -18,14 +18,26 @@
     "dist"
   ],
   "scripts": {
-    "build": "vite build",
+    "build": "vite build && node --input-type=module -e \"import fs from 'node:fs'; fs.copyFileSync('src/style.css', 'dist/style.css')\"",
     "prepublishOnly": "pnpm build"
   },
   "peerDependencies": {
+    "@element-plus/icons-vue": "^2.0.0",
+    "element-plus": "^2.8.0",
     "vue": "^3.3.0"
   },
+  "peerDependenciesMeta": {
+    "@element-plus/icons-vue": {
+      "optional": true
+    },
+    "element-plus": {
+      "optional": true
+    }
+  },
   "devDependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
     "@vitejs/plugin-vue": "^5.0.0",
+    "element-plus": "^2.14.2",
     "vite": "^5.0.0",
     "vue": "^3.5.39"
   },

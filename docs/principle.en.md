@@ -53,7 +53,7 @@ function onMouseMove(e) {
 }
 ```
 
-`getSafeTarget` filters out events whose target is inside `.review-overlay`, preventing the review UI itself from being selected.
+`getSafeTarget` filters out events whose target is inside `.vpr-review-overlay`, preventing the review UI itself from being selected.
 
 ### Click Selection
 
@@ -352,13 +352,13 @@ These locators are saved with the review record for later automated regression t
 
 ### Toolbar
 
-- **Drag**: can only be initiated on `.toolbar-title` or `.review-toolbar`.
-- **Resize**: the bottom-right `.toolbar-resize-handle` supports southeast resizing with a minimum width of 400px and minimum height of 48px.
+- **Drag**: can only be initiated on `.vpr-toolbar-title` or `.vpr-review-toolbar`.
+- **Resize**: the bottom-right `.vpr-toolbar-resize-handle` supports southeast resizing with a minimum width of 400px and minimum height of 48px.
 
 ### Form Modal
 
-- **Drag**: can only be initiated on `.modal-header`.
-- **Resize**: the bottom-right `.modal-resize-handle` with a minimum width of 360px and minimum height of 300px.
+- **Drag**: can only be initiated on `.el-dialog__header`.
+- **Resize**: the bottom-right `.vpr-modal-resize-handle` with a minimum width of 360px and minimum height of 300px.
 
 ### Box Selections
 

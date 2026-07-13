@@ -9,14 +9,15 @@
 1. [安装与依赖](#安装与依赖)
 2. [基础集成：使用 ReviewTool 组件](#基础集成使用-reviewtool-组件)
 3. [高级集成：使用 usePageReview 构建自定义 UI](#高级集成使用-usepagereview-构建自定义-ui)
-4. [Props 完整参考](#props-完整参考)
-5. [Events / 回调](#events--回调)
-6. [截图选项说明](#截图选项说明)
-7. [导出格式](#导出格式)
-8. [图片上传配置](#图片上传配置)
-9. [自定义样式](#自定义样式)
-10. [Vue 3 注意事项](#vue-3-注意事项)
-11. [最小可运行示例](#最小可运行示例)
+4. [无头交互 Composables](#无头交互-composables)
+5. [Props 完整参考](#props-完整参考)
+6. [Events / 回调](#events--回调)
+7. [截图选项说明](#截图选项说明)
+8. [导出格式](#导出格式)
+9. [图片上传配置](#图片上传配置)
+10. [自定义样式](#自定义样式)
+11. [Vue 3 注意事项](#vue-3-注意事项)
+12. [最小可运行示例](#最小可运行示例)
 
 ---
 
@@ -45,9 +46,21 @@ yarn add vue-page-review
 }
 ```
 
+如果使用默认的 `ReviewTool` UI，还需安装**可选** peer dependencies（只使用无头 composables 则不需要）：
+
+```bash
+pnpm add element-plus @element-plus/icons-vue
+```
+
+默认 UI 通过命名导入按需引入 element-plus 组件，支持 tree-shaking；同时请在入口引入 element-plus 的样式：
+
+```js
+import 'element-plus/dist/index.css'
+```
+
 ### 引入样式
 
-组件依赖自带的 CSS，请在入口或页面中引入：
+`vue-page-review` 自身的样式会在 `ReviewTool` 挂载时**自动注入**（向 `document.head` 插入 `<style id="vpr-styles">`，幂等），无需手动引入。下面的写法依然可用，仅为向后兼容或覆盖样式保留：
 
 ```js
 import 'vue-page-review/style.css'
@@ -67,7 +80,7 @@ import 'vue-page-review/style.css'
 <script setup>
 import { ref } from 'vue'
 import { ReviewTool } from 'vue-page-review'
-import 'vue-page-review/style.css'
+import 'element-plus/dist/index.css' // 默认 UI 需要
 
 const active = ref(false)
 </script>
@@ -142,6 +155,77 @@ const {
 - `exportToZIP()`：异步下载包含 JSON、Markdown 与截图的 ZIP。
 
 > **注意**：`screenshot.js` 与 `inspector.js` 是 `ReviewTool` 内部使用的工具模块，未通过公共入口导出。如需完全自定义截图或元素检查，建议直接使用 `html-to-image` 等底层能力。
+
+---
+
+## 无头交互 Composables
+
+如果 `usePageReview` 仍无法满足需求，你可以直接复用 `ReviewTool` 底层的选择、框选、拖拽与缩放逻辑（不渲染任何 UI，也不依赖 element-plus）：
+
+```vue
+<script setup>
+import { ref, computed } from 'vue'
+import {
+  useElementSelection,
+  useViewportBoxing,
+  useDragResize
+} from 'vue-page-review'
+
+const active = ref(true)
+const mode = ref('element')
+const onIgnoreTarget = (target) => !!target.closest('.my-review-overlay')
+
+const { hoveredRect, selectedElements } = useElementSelection({ active, mode, onIgnoreTarget })
+const { selectedBoxes, startResize: startBoxResize } = useViewportBoxing({
+  active,
+  mode,
+  onIgnoreTarget,
+  onBoxCreate: (box, e) => console.log('框选创建', box)
+})
+const { position, size, onDragStart, onResizeStart } = useDragResize({
+  initialPosition: { x: 0, y: 0 },
+  initialSize: { width: 400, height: null },
+  isDragHandle: (target) => target.classList?.contains('my-panel-header')
+})
+</script>
+
+<template>
+  <div class="my-review-overlay">
+    <div
+      v-if="hoveredRect"
+      class="my-highlight-box"
+      :style="{
+        left: hoveredRect.x + 'px',
+        top: hoveredRect.y + 'px',
+        width: hoveredRect.width + 'px',
+        height: hoveredRect.height + 'px'
+      }"
+    />
+    <div
+      class="my-panel"
+      :style="{
+        left: `calc(50% + ${position.x}px)`,
+        top: `calc(50% + ${position.y}px)`,
+        width: size.width + 'px'
+      }"
+      @mousedown="onDragStart"
+    >
+      <div class="my-panel-header">可拖动面板</div>
+      <div class="my-panel-resize" @mousedown.stop="onResizeStart" />
+    </div>
+  </div>
+</template>
+```
+
+### Composable API 速查
+
+| Composable | 作用 | 主要返回值（均为 ref） |
+| --- | --- | --- |
+| `useElementSelection({ active, mode, onIgnoreTarget })` | 元素悬停/选择 | `hoveredRect`、`hoveredTag`、`selectedElements`、`selectElement`、`removeSelectedElement`、`clearSelectedElements`、`refreshRects` |
+| `useViewportBoxing({ active, mode, onIgnoreTarget, onBoxCreate })` | 视口框选 | `selectedBoxes`、`dragRect`、`resizingBoxId`、`removeBox`、`clearBoxes`、`startResize`、`toViewportRect` |
+| `useDragResize({ initialPosition, initialSize, isDragHandle, minWidth, minHeight, measureRef })` | 面板拖拽/缩放 | `position`、`size`、`isDragging`、`isResizing`、`onDragStart`、`onResizeStart` |
+
+这些 composables **不依赖** `usePageReview`，只负责交互状态，可与任意数据层组合使用；`active` / `mode` 既可传 ref 也可传普通值。
 
 ---
 
@@ -325,29 +409,29 @@ async function uploadImage(blob, filename) {
 
 ## 自定义样式
 
-默认样式通过 `vue-page-review/style.css` 引入。你可以在自己的 CSS 中覆盖类名。
+默认样式会在 `ReviewTool` 挂载时自动注入（`<style id="vpr-styles">`），也可以通过 `import 'vue-page-review/style.css'` 手动引入。所有自定义类统一 `vpr-` 前缀，你可以在自己的 CSS 中覆盖它们。
 
 ### 常见可覆盖类名
 
 | 类名 | 说明 |
 | --- | --- |
-| `.review-overlay` | 评审浮层根节点，`pointer-events: none`，z-index 9000 |
-| `.review-toolbar` | 顶部工具栏，z-index 10000 |
-| `.highlight-box` / `.selected-box` / `.hover-box` | 元素高亮框 |
-| `.drag-rect` | 框选区域 |
-| `.resize-handle` | 框选区域 8 个调整大小手柄 |
-| `.review-modal` | 评审表单弹窗，z-index 10002 |
-| `.review-drawer` | 右侧抽屉，z-index 10003 |
+| `.vpr-review-overlay` | 评审浮层根节点，`pointer-events: none`，z-index 9000 |
+| `.vpr-review-toolbar` | 顶部工具栏，z-index 10000 |
+| `.vpr-highlight-box` / `.vpr-selected-box` / `.vpr-hover-box` | 元素高亮框 |
+| `.vpr-drag-rect` | 框选区域 |
+| `.vpr-resize-handle` | 框选区域 8 个调整大小手柄 |
+| `.vpr-review-dialog` | 评审表单弹窗（el-dialog），z-index 10002 |
+| `.vpr-drawer-layer` | 右侧抽屉遮罩层（el-drawer），z-index 10003 |
 
 ### 示例：修改主题色
 
 ```css
-.review-toolbar {
+.vpr-review-toolbar {
   background: #1a1a1a;
   color: #fff;
 }
 
-.highlight-box.selected-box {
+.vpr-highlight-box.vpr-selected-box {
   border-color: #ff5722;
   background: rgba(255, 87, 34, 0.12);
 }
@@ -376,7 +460,7 @@ async function uploadImage(blob, filename) {
 <script setup>
 import { ref } from 'vue'
 import { ReviewTool } from 'vue-page-review'
-import 'vue-page-review/style.css'
+import 'element-plus/dist/index.css' // 默认 UI 需要
 
 const active = ref(false)
 const upload = async (blob, filename) => {

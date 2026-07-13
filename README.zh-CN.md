@@ -11,8 +11,8 @@
 - 可拖动工具栏与评审弹窗
 - localStorage 持久化
 - 导出：JSON / Markdown / ZIP（含截图）
-- 使用原生 HTML 元素与自定义 CSS，无需 UI 框架
-- 通过 `usePageReview` 暴露 SDK 能力，便于自定义 UI 封装
+- Element Plus 为可选 peer dependency，默认 UI 按需引入
+- 无头 composables，可完全自定义评审 UI
 
 ## 安装
 
@@ -26,13 +26,19 @@ Peer dependency：
 npm install vue
 ```
 
+如果使用默认的 `ReviewTool` UI，还需安装可选 peer dependencies（只使用无头 composables 则不需要）：
+
+```bash
+npm install element-plus @element-plus/icons-vue
+```
+
 ## 使用
 
 ```vue
 <script setup>
 import { ref } from 'vue'
 import { ReviewTool } from 'vue-page-review'
-import 'vue-page-review/style.css'
+import 'element-plus/dist/index.css' // 默认 UI 需要
 
 const active = ref(false)
 </script>
@@ -42,6 +48,8 @@ const active = ref(false)
   <ReviewTool v-model:active="active" page-path="/dashboard" />
 </template>
 ```
+
+> **注意**：`vue-page-review` 自身的样式会在 `ReviewTool` 挂载时自动注入（`<style id="vpr-styles">`）。手动 `import 'vue-page-review/style.css'` 是可选的，仅为向后兼容或覆盖样式保留。
 
 ## Props
 
@@ -55,7 +63,7 @@ const active = ref(false)
 | `enableZipExport` | `Boolean` | `true` | 是否启用 ZIP 导出 |
 | `imageUploadUrl` | `String` | - | 截图上传图床地址 |
 
-## 组合式函数
+## 数据组合式函数
 
 ```js
 import { usePageReview } from 'vue-page-review'
@@ -64,6 +72,35 @@ const { reviews, addReview, exportToJSON, exportToZIP } = usePageReview({
   storageKey: 'my-reviews'
 })
 ```
+
+## 无头 Composables
+
+`ReviewTool` 底层的交互逻辑已抽成独立 composables（不渲染任何 UI，也不依赖 Element Plus），可用于构建完全自定义的评审 UI：
+
+```js
+import { ref } from 'vue'
+import {
+  useElementSelection,
+  useViewportBoxing,
+  useDragResize
+} from 'vue-page-review'
+
+const active = ref(true)
+const mode = ref('element')
+const onIgnoreTarget = (target) => !!target.closest('.my-review-overlay')
+
+const selection = useElementSelection({ active, mode, onIgnoreTarget })
+const boxing = useViewportBoxing({ active, mode, onIgnoreTarget })
+const panel = useDragResize({
+  initialPosition: { x: 0, y: 0 },
+  initialSize: { width: 400, height: null },
+  isDragHandle: (target) => target.classList?.contains('my-panel-header')
+})
+```
+
+- `useElementSelection`：悬停检测、点击选择、Ctrl/Cmd 多选、滚动后高亮矩形跟随。返回 `hoveredRect`、`hoveredTag`、`selectedElements`、`selectElement`、`removeSelectedElement`、`clearSelectedElements`、`refreshRects`。
+- `useViewportBoxing`：拖拽创建框选、8 方向调整大小、多框选。返回 `selectedBoxes`、`dragRect`、`resizingBoxId`、`removeBox`、`clearBoxes`、`startResize`、`toViewportRect`。
+- `useDragResize`：通用浮动面板拖拽与缩放（工具栏、弹窗、自定义面板）。返回 `position`、`size`、`isDragging`、`isResizing`、`onDragStart`、`onResizeStart`。
 
 ## 详细文档
 
