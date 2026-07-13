@@ -65,9 +65,14 @@ const { reviews, addReview, exportToJSON, exportToZIP } = usePageReview({
 })
 ```
 
+## 详细文档
+
+- [使用对接文档](./docs/usage.md)
+- [原理与实现](./docs/principle.md)
+
 ## 英文文档
 
-见 [`README.md`](./README.md)。
+见 [`README.md`](./README.md) / [`usage.en.md`](./docs/usage.en.md) / [`principle.en.md`](./docs/principle.en.md)。
 
 ## 相关
 

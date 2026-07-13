@@ -69,6 +69,11 @@ const { reviews, addReview, exportToJSON, exportToZIP } = usePageReview({
 
 See [`README.zh-CN.md`](./README.zh-CN.md).
 
+## Detailed Documentation
+
+- [Usage Guide](./docs/usage.en.md)
+- [Principle & Implementation](./docs/principle.en.md)
+
 ## Related
 
 - [react-page-review](https://github.com/z-ph/react-page-review) — React version
