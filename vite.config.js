@@ -12,13 +12,11 @@ export default defineConfig({
     },
     cssCodeSplit: false,
     rollupOptions: {
-      external: ['vue', 'element-plus', '@element-plus/icons-vue'],
+      external: ['vue'],
       output: {
         exports: 'named',
         globals: {
-          vue: 'Vue',
-          'element-plus': 'ElementPlus',
-          '@element-plus/icons-vue': 'ElementPlusIconsVue'
+          vue: 'Vue'
         }
       }
     }

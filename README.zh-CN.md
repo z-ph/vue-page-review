@@ -11,7 +11,8 @@
 - 可拖动工具栏与评审弹窗
 - localStorage 持久化
 - 导出：JSON / Markdown / ZIP（含截图）
-- 基于 Element Plus
+- 使用原生 HTML 元素与自定义 CSS，无需 UI 框架
+- 通过 `usePageReview` 暴露 SDK 能力，便于自定义 UI 封装
 
 ## 安装
 
@@ -19,10 +20,10 @@
 npm install vue-page-review
 ```
 
-Peer dependencies：
+Peer dependency：
 
 ```bash
-npm install vue element-plus @element-plus/icons-vue
+npm install vue
 ```
 
 ## 使用

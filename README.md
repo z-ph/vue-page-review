@@ -11,7 +11,8 @@ A Vue 3 page review tool for collecting UI feedback through element selection, v
 - Draggable toolbar and review modal
 - localStorage persistence
 - Export to JSON / Markdown / ZIP (with screenshots)
-- Built on Element Plus
+- Native HTML elements with custom CSS — no UI framework required
+- SDK capabilities exposed via `usePageReview` for custom UI wrappers
 
 ## Install
 
@@ -19,10 +20,10 @@ A Vue 3 page review tool for collecting UI feedback through element selection, v
 npm install vue-page-review
 ```
 
-Peer dependencies:
+Peer dependency:
 
 ```bash
-npm install vue element-plus @element-plus/icons-vue
+npm install vue
 ```
 
 ## Usage

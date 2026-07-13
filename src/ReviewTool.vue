@@ -11,48 +11,53 @@
       >
         <div class="toolbar-left">
           <span class="toolbar-title" title="按住此处可拖动">页面评审模式</span>
-          <el-radio-group v-model="mode" size="small">
-            <el-radio-button label="element">选择元素</el-radio-button>
-            <el-radio-button label="viewport">框定视图</el-radio-button>
-          </el-radio-group>
+          <div class="radio-group radio-group-small">
+            <label class="radio-button" :class="{ active: mode === 'element' }">
+              <input v-model="mode" type="radio" name="review-mode" value="element">
+              选择元素
+            </label>
+            <label class="radio-button" :class="{ active: mode === 'viewport' }">
+              <input v-model="mode" type="radio" name="review-mode" value="viewport">
+              框定视图
+            </label>
+          </div>
         </div>
         <div class="toolbar-right">
-          <el-button
+          <button
             v-if="enableComponentTree"
-            size="small"
+            class="btn btn-sm"
             @click="openTreePanel"
           >
             组件树
-          </el-button>
-          <el-button
-            size="small"
-            type="primary"
+          </button>
+          <button
+            class="btn btn-sm btn-primary"
             :disabled="selectedCount === 0"
             @click="openReviewForm"
           >
             评审 ({{ selectedCount }})
-          </el-button>
-          <el-button
-            size="small"
+          </button>
+          <button
+            class="btn btn-sm"
             :disabled="selectedCount === 0"
             @click="clearAllSelections"
           >
             取消选择
-          </el-button>
-          <el-badge :value="pageReviews.length" class="review-badge">
-            <el-button size="small" @click="listVisible = true">评审列表</el-button>
-          </el-badge>
-          <el-dropdown size="small" split-button type="primary" @click="exportToMarkdown">
-            导出
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item @click="exportToMarkdown">导出为 Markdown</el-dropdown-item>
-                <el-dropdown-item @click="exportToJSON">导出为 JSON</el-dropdown-item>
-                <el-dropdown-item v-if="enableZipExport" @click="exportToZIP">导出为 ZIP</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-          <el-button size="small" type="danger" @click="close">退出评审</el-button>
+          </button>
+          <span class="badge-wrapper">
+            <button class="btn btn-sm" @click="listVisible = true">评审列表</button>
+            <span v-if="pageReviews.length > 0" class="badge">{{ pageReviews.length }}</span>
+          </span>
+          <div class="dropdown">
+            <button class="btn btn-sm btn-primary" @click="exportToMarkdown">导出</button>
+            <button class="btn btn-sm btn-primary dropdown-toggle" @click.stop="exportDropdownVisible = !exportDropdownVisible">▼</button>
+            <div v-if="exportDropdownVisible" class="dropdown-menu">
+              <button class="dropdown-item" @click="exportToMarkdownAndClose">导出为 Markdown</button>
+              <button class="dropdown-item" @click="exportToJSONAndClose">导出为 JSON</button>
+              <button v-if="enableZipExport" class="dropdown-item" @click="exportToZIPAndClose">导出为 ZIP</button>
+            </div>
+          </div>
+          <button class="btn btn-sm btn-danger" @click="close">退出评审</button>
         </div>
         <div class="toolbar-resize-handle" @mousedown.stop="onToolbarResizeStart" />
       </div>
@@ -135,153 +140,181 @@
           <button class="close" @click="formVisible = false">×</button>
         </div>
         <div class="modal-body">
-          <el-form :model="form" label-width="80px">
-            <el-form-item label="评审目标">
-              <div class="review-targets-summary">
-                <el-tag
+          <div class="form">
+            <div class="form-group">
+              <label class="form-label">评审目标</label>
+              <div class="form-control-static">
+                <span
                   v-for="(target, idx) in form.targets"
                   :key="idx"
-                  size="small"
-                  class="target-tag"
+                  class="review-tag target-tag"
                 >
                   {{ target.type === 'element' ? (target.elementText || target.selector || '元素') : `框选 ${target.viewportRect?.x},${target.viewportRect?.y}` }}
-                </el-tag>
+                </span>
               </div>
-            </el-form-item>
-            <el-form-item label="窗口尺寸">
+            </div>
+            <div class="form-group">
+              <label class="form-label">窗口尺寸</label>
               <span class="text-muted">{{ form.viewport?.width }} × {{ form.viewport?.height }}</span>
-            </el-form-item>
-            <el-form-item label="滚动位置">
+            </div>
+            <div class="form-group">
+              <label class="form-label">滚动位置</label>
               <span class="text-muted">x={{ form.scroll?.x }}, y={{ form.scroll?.y }}</span>
-            </el-form-item>
-            <el-form-item label="截图">
-              <el-checkbox-group v-model="selectedScreenshots">
-                <el-checkbox :label="SCREENSHOT_TYPES.TARGETS">选中目标</el-checkbox>
-                <el-checkbox :label="SCREENSHOT_TYPES.VIEWPORT">当前视口</el-checkbox>
-                <el-checkbox :label="SCREENSHOT_TYPES.FULL_PAGE">完整页面</el-checkbox>
-              </el-checkbox-group>
-            </el-form-item>
-            <el-form-item label="标题" required>
-              <el-input v-model="form.title" placeholder="例如：按钮样式不统一" />
-            </el-form-item>
-            <el-form-item label="严重等级" required>
-              <el-radio-group v-model="form.severity">
-                <el-radio label="low">低</el-radio>
-                <el-radio label="medium">中</el-radio>
-                <el-radio label="high">高</el-radio>
-                <el-radio label="critical">严重</el-radio>
-              </el-radio-group>
-            </el-form-item>
-            <el-form-item label="评审建议" required>
-              <el-input
+            </div>
+            <div class="form-group">
+              <label class="form-label">截图</label>
+              <div class="checkbox-group">
+                <label class="checkbox">
+                  <input v-model="selectedScreenshots" type="checkbox" :value="SCREENSHOT_TYPES.TARGETS">
+                  选中目标
+                </label>
+                <label class="checkbox">
+                  <input v-model="selectedScreenshots" type="checkbox" :value="SCREENSHOT_TYPES.VIEWPORT">
+                  当前视口
+                </label>
+                <label class="checkbox">
+                  <input v-model="selectedScreenshots" type="checkbox" :value="SCREENSHOT_TYPES.FULL_PAGE">
+                  完整页面
+                </label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">标题 <span class="required">*</span></label>
+              <input v-model="form.title" class="form-input" placeholder="例如：按钮样式不统一">
+            </div>
+            <div class="form-group">
+              <label class="form-label">严重等级 <span class="required">*</span></label>
+              <div class="radio-group">
+                <label class="radio">
+                  <input v-model="form.severity" type="radio" value="low">
+                  低
+                </label>
+                <label class="radio">
+                  <input v-model="form.severity" type="radio" value="medium">
+                  中
+                </label>
+                <label class="radio">
+                  <input v-model="form.severity" type="radio" value="high">
+                  高
+                </label>
+                <label class="radio">
+                  <input v-model="form.severity" type="radio" value="critical">
+                  严重
+                </label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">评审建议 <span class="required">*</span></label>
+              <textarea
                 v-model="form.suggestion"
-                type="textarea"
-                :rows="4"
+                class="form-textarea"
+                rows="4"
                 placeholder="描述问题现象、影响和改进建议"
               />
-            </el-form-item>
-          </el-form>
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
-          <el-button @click="formVisible = false">取消</el-button>
-          <el-button type="primary" :disabled="!canSubmit" @click="submitReview">保存评审</el-button>
+          <button class="btn" @click="formVisible = false">取消</button>
+          <button class="btn btn-primary" :disabled="!canSubmit" @click="submitReview">保存评审</button>
         </div>
         <div class="modal-resize-handle" @mousedown.stop="onModalResizeStart" />
       </div>
 
       <!-- 组件树抽屉 -->
-      <el-drawer
-        v-model="treeVisible"
-        title="组件树检查器"
-        size="480px"
-        :with-header="true"
-        :z-index="10003"
-      >
-        <el-empty v-if="!componentTree" description="先选择一个元素以查看组件树" />
-        <div v-else class="tree-panel">
-          <div v-if="componentTree.framework && componentTree.framework.length" class="tree-section">
-            <h4>框架组件树</h4>
-            <div class="tree-list">
-              <div
-                v-for="(node, idx) in componentTree.framework"
-                :key="'fw-' + idx"
-                class="tree-node"
-                @mouseenter="onTreeNodeHover(node)"
-                @mouseleave="treeHoverRect = null"
-                @click="onTreeNodeSelect(node)"
-              >
-                <span class="node-name">{{ node.componentName }}</span>
+      <div v-if="treeVisible" class="drawer-backdrop" @click="treeVisible = false" />
+      <div v-if="treeVisible" class="review-drawer">
+        <div class="drawer-header">
+          <span>组件树检查器</span>
+          <button class="close" @click="treeVisible = false">×</button>
+        </div>
+        <div class="drawer-body">
+          <div v-if="!componentTree" class="empty-state">先选择一个元素以查看组件树</div>
+          <div v-else class="tree-panel">
+            <div v-if="componentTree.framework && componentTree.framework.length" class="tree-section">
+              <h4>框架组件树</h4>
+              <div class="tree-list">
+                <div
+                  v-for="(node, idx) in componentTree.framework"
+                  :key="'fw-' + idx"
+                  class="tree-node"
+                  @mouseenter="onTreeNodeHover(node)"
+                  @mouseleave="treeHoverRect = null"
+                  @click="onTreeNodeSelect(node)"
+                >
+                  <span class="node-name">{{ node.componentName }}</span>
+                </div>
               </div>
             </div>
-          </div>
-          <div class="tree-section">
-            <h4>DOM 树</h4>
-            <div class="tree-list">
-              <div
-                v-for="(node, idx) in componentTree.dom"
-                :key="'dom-' + idx"
-                class="tree-node"
-                :style="{ paddingLeft: idx * 12 + 'px' }"
-                @mouseenter="onTreeNodeHover(node)"
-                @mouseleave="treeHoverRect = null"
-                @click="onTreeNodeSelect(node)"
-              >
-                <span class="node-tag">{{ node.tag }}</span>
-                <span v-if="node.id" class="node-id">#{{ node.id }}</span>
-                <span v-if="node.aria?.role" class="node-aria">role={{ node.aria.role }}</span>
-                <span v-if="node.testId" class="node-testid">testid={{ node.testId }}</span>
+            <div class="tree-section">
+              <h4>DOM 树</h4>
+              <div class="tree-list">
+                <div
+                  v-for="(node, idx) in componentTree.dom"
+                  :key="'dom-' + idx"
+                  class="tree-node"
+                  :style="{ paddingLeft: idx * 12 + 'px' }"
+                  @mouseenter="onTreeNodeHover(node)"
+                  @mouseleave="treeHoverRect = null"
+                  @click="onTreeNodeSelect(node)"
+                >
+                  <span class="node-tag">{{ node.tag }}</span>
+                  <span v-if="node.id" class="node-id">#{{ node.id }}</span>
+                  <span v-if="node.aria?.role" class="node-aria">role={{ node.aria.role }}</span>
+                  <span v-if="node.testId" class="node-testid">testid={{ node.testId }}</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </el-drawer>
+      </div>
 
       <!-- 评审列表抽屉 -->
-      <el-drawer
-        v-model="listVisible"
-        title="当前页面评审意见"
-        size="480px"
-        :with-header="true"
-        :z-index="10003"
-      >
-        <div class="review-list-actions">
-          <el-button size="small" type="primary" @click="exportToMarkdown">导出 Markdown</el-button>
-          <el-button size="small" @click="exportToJSON">导出 JSON</el-button>
-          <el-button v-if="enableZipExport" size="small" @click="exportToZIP">导出 ZIP</el-button>
-          <el-button size="small" type="danger" text @click="clearPage">清空本页</el-button>
+      <div v-if="listVisible" class="drawer-backdrop" @click="listVisible = false" />
+      <div v-if="listVisible" class="review-drawer">
+        <div class="drawer-header">
+          <span>当前页面评审意见</span>
+          <button class="close" @click="listVisible = false">×</button>
         </div>
-        <el-empty v-if="pageReviews.length === 0" description="暂无评审意见" />
-        <div v-else class="review-list">
-          <el-card v-for="item in pageReviews" :key="item.id" class="review-item" shadow="never">
-            <div class="review-item-header">
-              <span class="review-item-title">{{ item.title }}</span>
-              <div class="review-item-tags">
-                <el-tag size="small" :type="severityType(item.severity)">{{ severityText(item.severity) }}</el-tag>
-                <el-tag size="small" type="info">{{ item.targets?.length || 1 }} 个目标</el-tag>
-                <el-tag v-if="hasComponentTree(item)" size="small" type="success">树</el-tag>
+        <div class="drawer-body">
+          <div class="review-list-actions">
+            <button class="btn btn-sm btn-primary" @click="exportToMarkdown">导出 Markdown</button>
+            <button class="btn btn-sm" @click="exportToJSON">导出 JSON</button>
+            <button v-if="enableZipExport" class="btn btn-sm" @click="exportToZIP">导出 ZIP</button>
+            <button class="btn btn-sm btn-danger btn-text" @click="clearPage">清空本页</button>
+          </div>
+          <div v-if="pageReviews.length === 0" class="empty-state">暂无评审意见</div>
+          <div v-else class="review-list">
+            <div v-for="item in pageReviews" :key="item.id" class="review-card review-item">
+              <div class="review-item-header">
+                <span class="review-item-title">{{ item.title }}</span>
+                <div class="review-item-tags">
+                  <span class="review-tag" :class="'tag-' + severityClass(item.severity)">{{ severityText(item.severity) }}</span>
+                  <span class="review-tag tag-info">{{ item.targets?.length || 1 }} 个目标</span>
+                  <span v-if="hasComponentTree(item)" class="review-tag tag-success">树</span>
+                </div>
+              </div>
+              <p class="review-item-target">
+                {{ summarizeTargets(item.targets) }}
+              </p>
+              <p class="review-item-suggestion">{{ item.suggestion }}</p>
+              <div class="review-item-meta">
+                <span class="text-muted">{{ new Date(item.createdAt).toLocaleString() }}</span>
+                <div class="review-item-actions">
+                  <button v-if="item.status !== 'resolved'" class="btn btn-sm btn-text btn-primary" @click="resolve(item.id)">标记解决</button>
+                  <button class="btn btn-sm btn-text btn-danger" @click="remove(item.id)">删除</button>
+                </div>
               </div>
             </div>
-            <p class="review-item-target">
-              {{ summarizeTargets(item.targets) }}
-            </p>
-            <p class="review-item-suggestion">{{ item.suggestion }}</p>
-            <div class="review-item-meta">
-              <span class="text-muted">{{ new Date(item.createdAt).toLocaleString() }}</span>
-              <div class="review-item-actions">
-                <el-button v-if="item.status !== 'resolved'" link type="primary" size="small" @click="resolve(item.id)">标记解决</el-button>
-                <el-button link type="danger" size="small" @click="remove(item.id)">删除</el-button>
-              </div>
-            </div>
-          </el-card>
+          </div>
         </div>
-      </el-drawer>
+      </div>
     </div>
   </teleport>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
-import { ElMessageBox } from 'element-plus'
 import { usePageReview } from './useReview.js'
 import {
   SCREENSHOT_TYPES,
@@ -293,6 +326,7 @@ import {
   uploadScreenshot
 } from './screenshot.js'
 import { getComponentTree, getNodeInfo } from './inspector.js'
+import './style.css'
 
 const props = defineProps({
   active: { type: Boolean, default: false },
@@ -300,6 +334,7 @@ const props = defineProps({
   pageName: { type: String, default: '' },
   storageKey: { type: String, default: 'page-reviews' },
   imageUpload: { type: Function, default: null },
+  imageUploadUrl: { type: String, default: '' },
   enableZipExport: { type: Boolean, default: true },
   enableComponentTree: { type: Boolean, default: true }
 })
@@ -321,6 +356,7 @@ const mode = ref('element')
 const formVisible = ref(false)
 const listVisible = ref(false)
 const treeVisible = ref(false)
+const exportDropdownVisible = ref(false)
 
 const hoveredRect = ref(null)
 const hoveredTag = ref('')
@@ -375,6 +411,26 @@ const form = ref({
 const selectedCount = computed(() => selectedElements.value.length + selectedBoxes.value.length)
 const canSubmit = computed(() => form.value.title.trim() && form.value.suggestion.trim())
 
+const uploadFn = computed(() => {
+  if (props.imageUpload) return props.imageUpload
+  if (props.imageUploadUrl) return defaultUrlUploader
+  return null
+})
+
+async function defaultUrlUploader(blob, filename) {
+  const formData = new FormData()
+  formData.append('file', blob, filename)
+  const res = await fetch(props.imageUploadUrl, { method: 'POST', body: formData })
+  if (!res.ok) throw new Error('Upload failed')
+  const text = await res.text()
+  try {
+    const json = JSON.parse(text)
+    return json.url || json.data?.url || text
+  } catch {
+    return text
+  }
+}
+
 const toolbarStyle = computed(() => {
   const { x, y } = toolbarPos.value
   const style = {
@@ -402,6 +458,14 @@ const resizeHandles = [
   { position: 'w' }, { position: 'e' },
   { position: 'sw' }, { position: 's' }, { position: 'se' }
 ]
+
+watch(exportDropdownVisible, (visible) => {
+  if (!visible) return
+  nextTick(() => {
+    const close = () => { exportDropdownVisible.value = false }
+    document.addEventListener('click', close, { once: true })
+  })
+})
 
 function toViewportRect(rect) {
   if (!rect) return null
@@ -447,7 +511,7 @@ function handleStyle(position, rect) {
   return styles
 }
 
-function severityType(s) {
+function severityClass(s) {
   const map = { low: 'info', medium: 'warning', high: 'danger', critical: 'danger' }
   return map[s] || 'info'
 }
@@ -469,6 +533,21 @@ function summarizeTargets(targets) {
     : `框选 x=${first.viewportRect.x}, y=${first.viewportRect.y}`
   if (targets.length === 1) return firstDesc
   return `${firstDesc} 等 ${targets.length} 个目标`
+}
+
+function exportToMarkdownAndClose() {
+  exportDropdownVisible.value = false
+  exportToMarkdown()
+}
+
+function exportToJSONAndClose() {
+  exportDropdownVisible.value = false
+  exportToJSON()
+}
+
+function exportToZIPAndClose() {
+  exportDropdownVisible.value = false
+  exportToZIP()
 }
 
 function captureEnv() {
@@ -512,9 +591,6 @@ function getSafeTarget(e) {
   const target = e.target
   if (!target || !(target instanceof Element)) return null
   if (target.closest('.review-overlay')) return null
-  if (target.closest('.el-dropdown-menu')) return null
-  if (target.closest('.el-popper')) return null
-  if (target.closest('.el-overlay')) return null
   return target
 }
 
@@ -939,7 +1015,7 @@ async function captureScreenshots() {
         if (dataUrl) {
           const filename = generateScreenshotFilename(target.type)
           let url = null
-          if (props.imageUpload) url = await uploadScreenshot(dataUrl, filename, props.imageUpload)
+          if (uploadFn.value) url = await uploadScreenshot(dataUrl, filename, uploadFn.value)
           screenshots.push({ type: target.type, filename, data: url ? undefined : dataUrl, url: url || undefined })
         }
       }
@@ -948,7 +1024,7 @@ async function captureScreenshots() {
       if (dataUrl) {
         const filename = generateScreenshotFilename(SCREENSHOT_TYPES.VIEWPORT)
         let url = null
-        if (props.imageUpload) url = await uploadScreenshot(dataUrl, filename, props.imageUpload)
+        if (uploadFn.value) url = await uploadScreenshot(dataUrl, filename, uploadFn.value)
         screenshots.push({ type: SCREENSHOT_TYPES.VIEWPORT, filename, data: url ? undefined : dataUrl, url: url || undefined })
       }
     } else if (type === SCREENSHOT_TYPES.FULL_PAGE) {
@@ -956,7 +1032,7 @@ async function captureScreenshots() {
       if (dataUrl) {
         const filename = generateScreenshotFilename(SCREENSHOT_TYPES.FULL_PAGE)
         let url = null
-        if (props.imageUpload) url = await uploadScreenshot(dataUrl, filename, props.imageUpload)
+        if (uploadFn.value) url = await uploadScreenshot(dataUrl, filename, uploadFn.value)
         screenshots.push({ type: SCREENSHOT_TYPES.FULL_PAGE, filename, data: url ? undefined : dataUrl, url: url || undefined })
       }
     }
@@ -1012,26 +1088,16 @@ function resolve(id) {
 }
 
 function remove(id) {
-  ElMessageBox.confirm('确定删除这条评审意见吗？', '删除确认', {
-    confirmButtonText: '删除',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(() => {
-    deleteReview(id)
-    emit('delete', { id })
-  })
+  if (!window.confirm('确定删除这条评审意见吗？')) return
+  deleteReview(id)
+  emit('delete', { id })
 }
 
 function clearPage() {
   if (pageReviews.value.length === 0) return
-  ElMessageBox.confirm('确定清空当前页面的所有评审意见吗？', '清空确认', {
-    confirmButtonText: '清空',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(() => {
-    clearPageReviews(resolvedPagePath.value)
-    emit('clear', { pagePath: resolvedPagePath.value })
-  })
+  if (!window.confirm('确定清空当前页面的所有评审意见吗？')) return
+  clearPageReviews(resolvedPagePath.value)
+  emit('clear', { pagePath: resolvedPagePath.value })
 }
 
 function close() {
@@ -1104,398 +1170,3 @@ defineExpose({
   exportToMarkdown
 })
 </script>
-
-<style scoped>
-.review-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9000;
-  pointer-events: none;
-}
-
-.review-overlay > *:not(.highlight-box):not(.drag-rect) {
-  pointer-events: auto;
-}
-
-.review-toolbar {
-  position: fixed;
-  top: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 10px 16px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  z-index: 10000;
-  user-select: none;
-  min-width: auto;
-  min-height: auto;
-}
-
-.toolbar-resize-handle {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 12px;
-  height: 12px;
-  cursor: se-resize;
-  background: linear-gradient(135deg, transparent 50%, #c0c4cc 50%);
-  border-bottom-right-radius: 8px;
-}
-
-.review-toolbar.is-dragging {
-  cursor: grabbing;
-}
-
-.toolbar-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.toolbar-title {
-  font-weight: bold;
-  color: #001529;
-  cursor: grab;
-}
-
-.toolbar-title:active {
-  cursor: grabbing;
-}
-
-.toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.highlight-box {
-  position: absolute;
-  border: 2px solid #409EFF;
-  background: rgba(64, 158, 255, 0.15);
-  z-index: 9100;
-  pointer-events: none;
-}
-
-.hover-box {
-  border-color: #409EFF;
-  background: rgba(64, 158, 255, 0.12);
-}
-
-.selected-box {
-  border-color: #F56C6C;
-  background: rgba(245, 108, 108, 0.12);
-}
-
-.selected-box .highlight-label {
-  background: #F56C6C;
-}
-
-.tree-hover-box {
-  border-color: #E6A23C;
-  background: rgba(230, 162, 60, 0.15);
-}
-
-.highlight-label {
-  position: absolute;
-  top: -22px;
-  left: 0;
-  padding: 2px 8px;
-  background: #409EFF;
-  color: #fff;
-  font-size: 12px;
-  border-radius: 4px;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.remove-icon {
-  cursor: pointer;
-  font-style: normal;
-  font-weight: bold;
-  line-height: 1;
-}
-
-.drag-rect {
-  position: absolute;
-  border: 2px dashed #67C23A;
-  background: rgba(103, 194, 58, 0.15);
-  z-index: 9100;
-  pointer-events: auto;
-}
-
-.drag-rect.preview-box {
-  border-color: #67C23A;
-  pointer-events: none;
-}
-
-.drag-rect.selected-box {
-  border-color: #F56C6C;
-  background: rgba(245, 108, 108, 0.12);
-}
-
-.drag-rect.is-resizing {
-  pointer-events: none;
-}
-
-.box-label {
-  position: absolute;
-  top: -22px;
-  left: 0;
-  padding: 2px 8px;
-  background: #F56C6C;
-  color: #fff;
-  font-size: 12px;
-  border-radius: 4px;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.resize-handle {
-  position: absolute;
-  background: #fff;
-  border: 1px solid #F56C6C;
-  border-radius: 50%;
-  z-index: 10001;
-  cursor: pointer;
-}
-
-.resize-handle.handle-nw { cursor: nw-resize; }
-.resize-handle.handle-n { cursor: n-resize; }
-.resize-handle.handle-ne { cursor: ne-resize; }
-.resize-handle.handle-w { cursor: w-resize; }
-.resize-handle.handle-e { cursor: e-resize; }
-.resize-handle.handle-sw { cursor: sw-resize; }
-.resize-handle.handle-s { cursor: s-resize; }
-.resize-handle.handle-se { cursor: se-resize; }
-
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 10001;
-  pointer-events: auto;
-}
-
-.review-modal {
-  position: fixed;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  background: #fff;
-  border-radius: 8px;
-  width: 560px;
-  max-width: 90vw;
-  max-height: 90vh;
-  z-index: 10002;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.review-modal.is-dragging {
-  user-select: none;
-}
-
-.review-modal .modal-header {
-  padding: 12px 16px;
-  font-weight: bold;
-  border-bottom: 1px solid #ebeef5;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: grab;
-}
-
-.review-modal .modal-header:active {
-  cursor: grabbing;
-}
-
-.review-modal .modal-header .close {
-  background: none;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-  color: #909399;
-}
-
-.review-modal .modal-body {
-  flex: 1;
-  padding: 16px;
-  overflow: auto;
-}
-
-.review-modal .modal-footer {
-  padding: 12px 16px;
-  border-top: 1px solid #ebeef5;
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.modal-resize-handle {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 16px;
-  height: 16px;
-  cursor: se-resize;
-  background: linear-gradient(135deg, transparent 50%, #c0c4cc 50%);
-  border-bottom-right-radius: 8px;
-}
-
-.review-targets-summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.target-tag {
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.review-target-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.target-desc {
-  color: #606266;
-  font-size: 13px;
-  max-width: 360px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.text-muted {
-  color: #909399;
-  font-size: 13px;
-}
-
-.tree-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.tree-section h4 {
-  margin: 0 0 10px;
-  color: #303133;
-  font-size: 14px;
-}
-
-.tree-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.tree-node {
-  padding: 6px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 13px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  transition: background 0.15s;
-}
-
-.tree-node:hover {
-  background: #f5f7fa;
-}
-
-.node-tag {
-  color: #409eff;
-  font-weight: bold;
-}
-
-.node-id {
-  color: #67c23a;
-  margin-left: 6px;
-}
-
-.node-aria {
-  color: #e6a23c;
-  margin-left: 6px;
-}
-
-.node-testid {
-  color: #909399;
-  margin-left: 6px;
-}
-
-.node-name {
-  color: #606266;
-  font-weight: bold;
-}
-
-.review-list-actions {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.review-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.review-item {
-  border: 1px solid #e4e7ed;
-}
-
-.review-item-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.review-item-title {
-  font-weight: bold;
-  color: #303133;
-}
-
-.review-item-tags {
-  display: flex;
-  gap: 6px;
-}
-
-.review-item-target {
-  color: #606266;
-  font-size: 12px;
-  margin-bottom: 8px;
-  word-break: break-all;
-}
-
-.review-item-suggestion {
-  color: #303133;
-  font-size: 13px;
-  line-height: 1.6;
-  margin-bottom: 12px;
-}
-
-.review-item-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.review-item-actions {
-  display: flex;
-  gap: 8px;
-}
-</style>
