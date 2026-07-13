@@ -61,7 +61,7 @@
       <div
         v-if="hoveredRect && mode === 'element' && !isDraggingBox && !resizingBoxId"
         class="highlight-box hover-box"
-        :style="highlightStyle(hoveredRect)"
+        :style="highlightStyle(toViewportRect(hoveredRect))"
       >
         <span class="highlight-label">{{ hoveredTag }}</span>
       </div>
@@ -71,7 +71,7 @@
         v-for="(item, idx) in selectedElements"
         :key="'el-' + idx"
         class="highlight-box selected-box"
-        :style="highlightStyle(item.rect)"
+        :style="highlightStyle(toViewportRect(item.rect))"
         @click.stop="onSelectedElementClick(item, $event)"
       >
         <span class="highlight-label">
@@ -84,7 +84,7 @@
       <div
         v-if="treeHoverRect"
         class="highlight-box tree-hover-box"
-        :style="highlightStyle(treeHoverRect)"
+        :style="highlightStyle(toViewportRect(treeHoverRect))"
       />
 
       <!-- 已选框选区域 -->
@@ -93,7 +93,7 @@
         :key="box.id"
         class="drag-rect selected-box"
         :class="{ 'is-resizing': resizingBoxId === box.id }"
-        :style="boxStyle(box.rect)"
+        :style="boxStyle(toViewportRect(box.rect))"
         @mousedown.stop="onBoxMouseDown(box, $event)"
       >
         <span class="box-label" @mousedown.stop>
@@ -331,6 +331,8 @@ const boxCounter = ref(0)
 const treeHoverRect = ref(null)
 const componentTree = ref(null)
 
+const scrollPos = ref({ x: window.scrollX, y: window.scrollY })
+
 const dragRect = ref(null)
 const isDraggingBox = ref(false)
 const dragStart = ref({ x: 0, y: 0 })
@@ -400,6 +402,16 @@ const resizeHandles = [
   { position: 'w' }, { position: 'e' },
   { position: 'sw' }, { position: 's' }, { position: 'se' }
 ]
+
+function toViewportRect(rect) {
+  if (!rect) return null
+  return {
+    x: rect.x - scrollPos.value.x,
+    y: rect.y - scrollPos.value.y,
+    width: rect.width,
+    height: rect.height
+  }
+}
 
 function highlightStyle(rect) {
   if (!rect) return {}
@@ -583,7 +595,7 @@ function onMouseDown(e) {
   if (e.target.closest('.review-overlay')) return
   e.preventDefault()
   isDraggingBox.value = true
-  dragStart.value = { x: e.clientX + window.scrollX, y: e.clientY + window.scrollY }
+  dragStart.value = { x: e.clientX, y: e.clientY }
   dragRect.value = { x: dragStart.value.x, y: dragStart.value.y, width: 0, height: 0 }
 }
 
@@ -594,8 +606,8 @@ function onMouseMoveDrag(e) {
     return
   }
   if (!isDraggingBox.value) return
-  const x = e.clientX + window.scrollX
-  const y = e.clientY + window.scrollY
+  const x = e.clientX
+  const y = e.clientY
   dragRect.value = {
     x: Math.min(dragStart.value.x, x),
     y: Math.min(dragStart.value.y, y),
@@ -636,7 +648,12 @@ function onMouseUp(e) {
     selectedBoxes.value.push({
       id: 'box-' + Date.now() + '-' + boxCounter.value++,
       index: selectedBoxes.value.length,
-      rect: { ...dragRect.value }
+      rect: {
+        x: dragRect.value.x + window.scrollX,
+        y: dragRect.value.y + window.scrollY,
+        width: dragRect.value.width,
+        height: dragRect.value.height
+      }
     })
   }
   dragRect.value = null
@@ -765,6 +782,10 @@ function onKeyDown(e) {
     if (formVisible.value) formVisible.value = false
     else close()
   }
+}
+
+function onScroll() {
+  scrollPos.value = { x: window.scrollX, y: window.scrollY }
 }
 
 function handleOverlayClick() {}
@@ -993,6 +1014,7 @@ function bindEvents() {
   document.addEventListener('mousemove', onModalMouseMove)
   document.addEventListener('mouseup', onMouseUp)
   document.addEventListener('keydown', onKeyDown)
+  window.addEventListener('scroll', onScroll, true)
 }
 
 function unbindEvents() {
@@ -1005,6 +1027,7 @@ function unbindEvents() {
   document.removeEventListener('mousemove', onModalMouseMove)
   document.removeEventListener('mouseup', onMouseUp)
   document.removeEventListener('keydown', onKeyDown)
+  window.removeEventListener('scroll', onScroll, true)
 }
 
 onMounted(() => {

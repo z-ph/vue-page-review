@@ -1,0 +1,37 @@
+[
+  {
+    "number": 1,
+    "category": "坐标体系修正",
+    "task": "以视口坐标渲染文档坐标保存的位置",
+    "steps": [
+      { "step": "元素高亮保存文档坐标，渲染时按当前滚动换算", "completed": true },
+      { "step": "框选框保存文档坐标，渲染时按当前滚动换算", "completed": true },
+      { "step": "hover 高亮使用视口坐标", "completed": true }
+    ],
+    "passes": true
+  },
+  {
+    "number": 2,
+    "category": "滚动跟随",
+    "task": "滚动时刷新高亮与框选框位置",
+    "steps": [
+      { "step": "监听 window scroll", "completed": true },
+      { "step": "滚动时重新查询元素位置并更新高亮", "completed": true },
+      { "step": "滚动时按文档坐标换算更新框选框", "completed": true },
+      { "step": "退出评审或清空选择时移除监听", "completed": true }
+    ],
+    "passes": true
+  },
+  {
+    "number": 3,
+    "category": "构建与发布",
+    "task": "双包同步修复并发布",
+    "steps": [
+      { "step": "Vue 包修复并通过 build", "completed": false },
+      { "step": "React 包修复并通过 build", "completed": false },
+      { "step": "发布新版本到 npm", "completed": false },
+      { "step": "更新 bidding 项目并部署", "completed": false }
+    ],
+    "passes": false
+  }
+]
