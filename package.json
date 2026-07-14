@@ -36,9 +36,9 @@
   },
   "devDependencies": {
     "@element-plus/icons-vue": "^2.3.2",
-    "@vitejs/plugin-vue": "^5.0.0",
-    "element-plus": "^2.14.2",
-    "vite": "^5.0.0",
+    "@vitejs/plugin-vue": "^6.0.7",
+    "element-plus": "^2.14.3",
+    "vite": "^8.1.4",
     "vue": "^3.5.39"
   },
   "keywords": [
