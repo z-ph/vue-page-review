@@ -51,6 +51,20 @@ async function waitBlob(page, minCount) {
       }
       return orig(blob)
     }
+    // 记录评审 overlay 的 display 变化（验证截图期间被隐藏）
+    window.__overlayDisplayLog = []
+    new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        const t = m.target
+        if (t && t.classList && t.classList.contains('vpr-review-overlay')) {
+          window.__overlayDisplayLog.push(t.style.display || '')
+        }
+      }
+    }).observe(document, {
+      attributes: true,
+      attributeFilter: ['style'],
+      subtree: true
+    })
   })
 
   await page.goto(BASE, { waitUntil: 'networkidle' })
@@ -195,12 +209,163 @@ async function waitBlob(page, minCount) {
   await page.waitForFunction(() => document.querySelectorAll('.vpr-selected-box').length === 0)
   check('「取消选择」清空所有选中', true)
 
-  // 18. 退出评审
+  // 18. 混合模式滚动跟随（滚动监听与模式解耦）
+  await page.evaluate(() => {
+    const spacer = document.createElement('div')
+    spacer.id = 'e2e-scroll-spacer'
+    spacer.style.height = '2000px'
+    document.body.appendChild(spacer)
+  })
+  // 框定视图模式框选一个区域
+  await page.locator('.vpr-review-toolbar').getByText('框定视图', { exact: true }).click()
+  await page.mouse.move(200, 500)
+  await page.mouse.down()
+  await page.mouse.move(400, 650, { steps: 5 })
+  await page.mouse.up()
+  await page.waitForSelector('.vpr-drag-rect.vpr-selected-box', { state: 'visible' })
+  // 切回元素模式选中一个元素（两种高亮共存）
+  await page.locator('.vpr-review-toolbar').getByText('选择元素', { exact: true }).click()
+  await page.click('.test-card >> nth=4')
+  await page.waitForSelector('.vpr-highlight-box.vpr-selected-box', { state: 'visible' })
+
+  const rectOf = (sel) =>
+    page.evaluate((s) => {
+      const el = document.querySelector(s)
+      if (!el) return null
+      const r = el.getBoundingClientRect()
+      return { x: r.left, y: r.top, width: r.width, height: r.height }
+    }, sel)
+  const waitRectTop = (sel, y) =>
+    page.waitForFunction(
+      ([s, top]) => {
+        const el = document.querySelector(s)
+        return el && Math.abs(el.getBoundingClientRect().top - top) < 3
+      },
+      [sel, y],
+      { timeout: 10000 }
+    )
+
+  const boxBefore = await rectOf('.vpr-drag-rect.vpr-selected-box')
+  const elBefore = await rectOf('.vpr-highlight-box.vpr-selected-box')
+  // 元素模式下滚动：框选区域也应跟随
+  await page.evaluate(() => window.scrollBy(0, 300))
+  await waitRectTop('.vpr-highlight-box.vpr-selected-box', elBefore.y - 300)
+  const boxAfter = await rectOf('.vpr-drag-rect.vpr-selected-box')
+  const elAfter = await rectOf('.vpr-highlight-box.vpr-selected-box')
+  check(
+    '元素模式下滚动：框选区域跟随文档',
+    !!boxAfter && Math.abs(boxAfter.y - (boxBefore.y - 300)) < 3,
+    boxAfter ? `Δy=${(boxAfter.y - boxBefore.y).toFixed(1)}` : '框选高亮缺失'
+  )
+  check(
+    '元素模式下滚动：元素高亮跟随元素',
+    !!elAfter && Math.abs(elAfter.y - (elBefore.y - 300)) < 3,
+    elAfter ? `Δy=${(elAfter.y - elBefore.y).toFixed(1)}` : '元素高亮缺失'
+  )
+
+  // 框选模式下滚动：元素高亮也应跟随
+  await page.locator('.vpr-review-toolbar').getByText('框定视图', { exact: true }).click()
+  await page.evaluate(() => window.scrollBy(0, 300))
+  await waitRectTop('.vpr-highlight-box.vpr-selected-box', elAfter.y - 300)
+  const boxAfter2 = await rectOf('.vpr-drag-rect.vpr-selected-box')
+  const elAfter2 = await rectOf('.vpr-highlight-box.vpr-selected-box')
+  check(
+    '框选模式下滚动：元素高亮跟随元素',
+    !!elAfter2 && Math.abs(elAfter2.y - (elAfter.y - 300)) < 3,
+    elAfter2 ? `Δy=${(elAfter2.y - elAfter.y).toFixed(1)}` : '元素高亮缺失'
+  )
+  check(
+    '框选模式下滚动：框选区域跟随文档',
+    !!boxAfter2 && Math.abs(boxAfter2.y - (boxAfter.y - 300)) < 3,
+    boxAfter2 ? `Δy=${(boxAfter2.y - boxAfter.y).toFixed(1)}` : '框选高亮缺失'
+  )
+
+  // 清理：回顶部、移除撑高元素、清空选择、切回元素模式
+  await page.evaluate(() => {
+    window.scrollTo(0, 0)
+    document.getElementById('e2e-scroll-spacer')?.remove()
+  })
+  await clickMoreItem(page, '取消选择')
+  await page.locator('.vpr-review-toolbar').getByText('选择元素', { exact: true }).click()
+
+  // 19. 截图期间隐藏评审 UI（导出截图纯净）
+  await page.click('.test-card >> nth=0')
+  await page.waitForSelector('.vpr-highlight-box.vpr-selected-box', { state: 'visible' })
+  await page.locator('.vpr-review-toolbar .el-badge .el-button').click()
+  await page.waitForSelector('.vpr-review-dialog', { state: 'visible' })
+  await page.locator('.vpr-review-dialog .el-checkbox', { hasText: '完整页面' }).click()
+  await page.waitForFunction(
+    () => {
+      const w = Array.from(document.querySelectorAll('.vpr-review-dialog .el-checkbox'))
+        .find((el) => el.textContent.includes('完整页面'))
+      return !!w?.querySelector('input')?.checked
+    },
+    null,
+    { timeout: 5000 }
+  )
+  check('勾选「完整页面」截图选项', true)
+  await page.getByPlaceholder('例如：按钮样式不统一').fill('E2E 截图评审')
+  await page.getByPlaceholder('描述问题现象、影响和改进建议').fill('E2E 截图建议')
+  await page.locator('.vpr-review-dialog .el-dialog__footer .el-button--primary').click()
+  // 断言：截图生成期间 overlay 处于 display:none（MutationObserver 已记录）
+  await page.waitForFunction(() => (window.__overlayDisplayLog || []).includes('none'), null, {
+    timeout: 15000
+  })
+  check('保存评审截图期间 overlay 曾隐藏（display:none）', true)
+  // 截图期间 overlay（含弹窗）被隐藏，弹窗消失不等于保存完成；以记录落盘为完成信号
+  const savedWithShot = await page
+    .waitForFunction(
+      () => {
+        const raw = localStorage.getItem('page-reviews')
+        if (!raw) return false
+        const list = JSON.parse(raw)
+        const reviews = Array.isArray(list) ? list : Object.values(list).flat()
+        const r = reviews.find((x) => x.title === 'E2E 截图评审')
+        return !!(
+          r &&
+          r.screenshots?.some(
+            (s) => s.type === 'fullpage' && s.data && s.data.startsWith('data:image/png')
+          )
+        )
+      },
+      null,
+      { timeout: 20000 }
+    )
+    .then(() => true)
+    .catch(() => false)
+  check('评审记录落盘且含完整页面截图数据', savedWithShot)
+  const overlayRestored = await page.evaluate(() => {
+    const el = document.querySelector('.vpr-review-overlay')
+    return el ? el.style.display !== 'none' : false
+  })
+  check('截图完成后 overlay 显示已恢复', overlayRestored)
+
+  // 导出 ZIP 并解码其中的完整页面 PNG（PNG 头 + IHDR 尺寸断言）
+  await clickMoreItem(page, '导出 ZIP')
+  const zipBlobPng = await waitBlob(page, 4)
+  const JSZip = require('jszip')
+  const zip = await JSZip.loadAsync(Buffer.from(zipBlobPng.bytes))
+  const pngNames = Object.keys(zip.files).filter((n) => /images\/screenshot-fullpage-.*\.png$/.test(n))
+  check('ZIP 内含完整页面截图文件', pngNames.length > 0, pngNames.join(','))
+  let pngOk = false
+  let pngInfo = ''
+  if (pngNames.length > 0) {
+    const png = await zip.files[pngNames[0]].async('nodebuffer')
+    const isPng =
+      png.length > 24 && png[0] === 0x89 && png[1] === 0x50 && png[2] === 0x4e && png[3] === 0x47
+    const w = isPng ? png.readUInt32BE(16) : 0
+    const h = isPng ? png.readUInt32BE(20) : 0
+    pngOk = isPng && w > 0 && h > 0
+    pngInfo = `${w}x${h}, ${png.length} bytes`
+  }
+  check('完整页面截图为合法 PNG 且尺寸有效', pngOk, pngInfo)
+
+  // 20. 退出评审
   await page.locator('.vpr-review-toolbar .el-button--danger').click()
   await page.waitForSelector('.vpr-review-toolbar', { state: 'hidden' })
   check('退出评审后工具栏消失', true)
 
-  // 19. 无页面级 JS 错误
+  // 21. 无页面级 JS 错误
   check('无页面 JS 错误', pageErrors.length === 0, pageErrors.join(' | '))
 
   await browser.close()

@@ -1,0 +1,54 @@
+[
+  {
+    "number": 1,
+    "category": "修复",
+    "task": "高亮滚动跟随与模式解耦",
+    "steps": [
+      {
+        "step": "useElementSelection：scroll 监听与选中矩形刷新改为仅依赖 active，交互监听仍按 mode 门控",
+        "completed": true
+      },
+      {
+        "step": "useViewportBoxing：scroll 监听与框选矩形刷新改为仅依赖 active，交互监听仍按 mode 门控，保留 resizingBoxId 例外",
+        "completed": true
+      }
+    ],
+    "passes": true
+  },
+  {
+    "number": 2,
+    "category": "修复",
+    "task": "截图期间隐藏评审 UI",
+    "steps": [
+      {
+        "step": "captureScreenshots 执行前（selectedScreenshots.length > 0 时）将 .vpr-review-overlay 设为 display:none 并双层 rAF 等待",
+        "completed": true
+      },
+      {
+        "step": "截取完成后在 finally 中恢复 overlay 显示",
+        "completed": true
+      }
+    ],
+    "passes": true
+  },
+  {
+    "number": 3,
+    "category": "验证",
+    "task": "端到端验证",
+    "steps": [
+      {
+        "step": "新增 e2e 用例：混合模式滚动跟随（两个方向）",
+        "completed": true
+      },
+      {
+        "step": "新增 e2e 用例：导出截图不含评审 UI",
+        "completed": true
+      },
+      {
+        "step": "既有 e2e 全量回归通过",
+        "completed": true
+      }
+    ],
+    "passes": true
+  }
+]

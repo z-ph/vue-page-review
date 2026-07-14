@@ -141,17 +141,26 @@ export function useViewportBoxing({ active, mode, onIgnoreTarget, onBoxCreate } 
     scrollPos.value = { x: window.scrollX, y: window.scrollY }
   }
 
+  // 滚动跟随与模式解耦：评审激活即挂载，保证元素模式下框选区域也随文档滚动
+  watchEffect((onCleanup) => {
+    if (!unref(active)) return
+    scrollPos.value = { x: window.scrollX, y: window.scrollY }
+    window.addEventListener('scroll', onScroll, true)
+    onCleanup(() => {
+      window.removeEventListener('scroll', onScroll, true)
+    })
+  })
+
+  // 框选交互仍按框选模式门控（调整尺寸中的 resizingBoxId 例外保留）
   watchEffect((onCleanup) => {
     if (!isEnabled() && !resizingBoxId.value) return
     document.addEventListener('mousedown', onMouseDown)
     document.addEventListener('mousemove', onMouseMove)
     document.addEventListener('mouseup', onMouseUp)
-    window.addEventListener('scroll', onScroll, true)
     onCleanup(() => {
       document.removeEventListener('mousedown', onMouseDown)
       document.removeEventListener('mousemove', onMouseMove)
       document.removeEventListener('mouseup', onMouseUp)
-      window.removeEventListener('scroll', onScroll, true)
     })
   })
 

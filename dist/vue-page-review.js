@@ -3286,12 +3286,16 @@ function fe({ active: e, mode: t, onIgnoreTarget: n } = {}) {
 			y: window.scrollY
 		}, f();
 	};
-	return v((e) => {
-		s() && (o.value = {
+	return v((t) => {
+		g(e) && (o.value = {
 			x: window.scrollX,
 			y: window.scrollY
-		}, document.addEventListener("mousemove", l), document.addEventListener("mouseout", u), document.addEventListener("click", d, !0), window.addEventListener("scroll", m, !0), e(() => {
-			document.removeEventListener("mousemove", l), document.removeEventListener("mouseout", u), document.removeEventListener("click", d, !0), window.removeEventListener("scroll", m, !0);
+		}, window.addEventListener("scroll", m, !0), t(() => {
+			window.removeEventListener("scroll", m, !0);
+		}));
+	}), v((e) => {
+		s() && (document.addEventListener("mousemove", l), document.addEventListener("mouseout", u), document.addEventListener("click", d, !0), e(() => {
+			document.removeEventListener("mousemove", l), document.removeEventListener("mouseout", u), document.removeEventListener("click", d, !0);
 		}));
 	}), {
 		hoveredRect: r,
@@ -3452,9 +3456,16 @@ function he({ active: e, mode: t, onIgnoreTarget: r, onBoxCreate: i } = {}) {
 			y: window.scrollY
 		};
 	};
-	return v((e) => {
-		!h() && !s.value || (document.addEventListener("mousedown", w), document.addEventListener("mousemove", T), document.addEventListener("mouseup", E), window.addEventListener("scroll", D, !0), e(() => {
-			document.removeEventListener("mousedown", w), document.removeEventListener("mousemove", T), document.removeEventListener("mouseup", E), window.removeEventListener("scroll", D, !0);
+	return v((t) => {
+		g(e) && (l.value = {
+			x: window.scrollX,
+			y: window.scrollY
+		}, window.addEventListener("scroll", D, !0), t(() => {
+			window.removeEventListener("scroll", D, !0);
+		}));
+	}), v((e) => {
+		!h() && !s.value || (document.addEventListener("mousedown", w), document.addEventListener("mousemove", T), document.addEventListener("mouseup", E), e(() => {
+			document.removeEventListener("mousedown", w), document.removeEventListener("mousemove", T), document.removeEventListener("mouseup", E);
 		}));
 	}), {
 		selectedBoxes: a,
@@ -4578,45 +4589,52 @@ var rn = {
 			return e.selector && (t.cssSelector = e.selector), e.xpath && (t.xpath = e.xpath), e.aria && Object.keys(e.aria).length && (t.aria = e.aria), e.testId && (t.testId = e.testId), Object.keys(t).length ? t : null;
 		}
 		async function bt() {
-			let e = [];
-			for (let t of Y.value) if (t === Mt.TARGETS) for (let t of X.value.targets) {
-				let n = null;
-				if (t.type === "element" && t.elementRect) {
-					let e = document.querySelector(t.selector);
-					e && (n = await Pt(e));
-				} else t.type === "viewport" && t.viewportRect && (n = await Lt(t.viewportRect));
-				if (n) {
-					let r = Nt(t.type), i = null;
-					et.value && (i = await Bt(n, r, et.value)), e.push({
-						type: t.type,
-						filename: r,
-						data: i ? void 0 : n,
-						url: i || void 0
-					});
+			let e = [], t = Y.value.length > 0 ? document.querySelector(".vpr-review-overlay") : null, n = t ? t.style.display : "";
+			t && (t.style.display = "none", await new Promise((e) => {
+				requestAnimationFrame(() => requestAnimationFrame(() => e()));
+			}));
+			try {
+				for (let t of Y.value) if (t === Mt.TARGETS) for (let t of X.value.targets) {
+					let n = null;
+					if (t.type === "element" && t.elementRect) {
+						let e = document.querySelector(t.selector);
+						e && (n = await Pt(e));
+					} else t.type === "viewport" && t.viewportRect && (n = await Lt(t.viewportRect));
+					if (n) {
+						let r = Nt(t.type), i = null;
+						et.value && (i = await Bt(n, r, et.value)), e.push({
+							type: t.type,
+							filename: r,
+							data: i ? void 0 : n,
+							url: i || void 0
+						});
+					}
 				}
-			}
-			else if (t === Mt.VIEWPORT) {
-				let t = await Ft();
-				if (t) {
-					let n = Nt(Mt.VIEWPORT), r = null;
-					et.value && (r = await Bt(t, n, et.value)), e.push({
-						type: Mt.VIEWPORT,
-						filename: n,
-						data: r ? void 0 : t,
-						url: r || void 0
-					});
+				else if (t === Mt.VIEWPORT) {
+					let t = await Ft();
+					if (t) {
+						let n = Nt(Mt.VIEWPORT), r = null;
+						et.value && (r = await Bt(t, n, et.value)), e.push({
+							type: Mt.VIEWPORT,
+							filename: n,
+							data: r ? void 0 : t,
+							url: r || void 0
+						});
+					}
+				} else if (t === Mt.FULL_PAGE) {
+					let t = await It();
+					if (t) {
+						let n = Nt(Mt.FULL_PAGE), r = null;
+						et.value && (r = await Bt(t, n, et.value)), e.push({
+							type: Mt.FULL_PAGE,
+							filename: n,
+							data: r ? void 0 : t,
+							url: r || void 0
+						});
+					}
 				}
-			} else if (t === Mt.FULL_PAGE) {
-				let t = await It();
-				if (t) {
-					let n = Nt(Mt.FULL_PAGE), r = null;
-					et.value && (r = await Bt(t, n, et.value)), e.push({
-						type: Mt.FULL_PAGE,
-						filename: n,
-						data: r ? void 0 : t,
-						url: r || void 0
-					});
-				}
+			} finally {
+				t && (t.style.display = n);
 			}
 			return e;
 		}
